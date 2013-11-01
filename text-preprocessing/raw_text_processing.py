@@ -1,13 +1,11 @@
+#! /usr/bin/python
+
+# usage: python tokenize_docs.py <source-directory> <destination-directory>
+# example: python tokenize_docs.py RawTextDescriptions/ TokenizedText/ 
+
 from nltk.tokenize import TreebankWordTokenizer
 import sys
 import os
-
-def remove_stop_words(words, stopwords):
-	newwords = []
-	for word in words:
-		if not(word in stopwords):
-			newwords.append(word)
-	return newwords
 	
 def remove_urls(words):
 	newwords = []
@@ -55,20 +53,6 @@ def remove_leading_punctuation(words):
 				word = word[1:]
 	return newwords
 
-def read_data(filename):
-	"""
-	Read in data from a file and return a list with each element being one line from the file.
-	Parameters:
-	1) filename: name of file to be read from
-	Note: the code now opens as a binary and replaces carriage return characters with newlines because python's read and readline functions don't play well with carriage returns.
-	However, this will no longer be an issue with python 3.
-	"""	
-	with open(filename, "rb") as f:
-		s = f.read().replace('\r\n', '\n').replace('\r', '\n')
-		data = s.split('\n')
-	
-	return data
-
 def split_slashes_and_periods(words):
 	newwords = []
 	for word in words:
@@ -86,47 +70,23 @@ def split_slashes_and_periods(words):
 
 def tokenize_raw_text(infilename,outfilename):
 
-    #infile = open("/Users/jchan/Desktop/Dropbox/Research/Dissertation/OpenIDEO/Data/TextDescriptions/social-business/screened/social-business_screened_C-bring-the-festival-de-teatro-de-manizales-to-rural-caldas.txt")
     infile = open(infilename)
     outfile = open(outfilename,'w')
-    
-    # get the stopwords (this is the list that nltk uses)
-    stopwords = read_data("englishstopwords-jc")
 
     # read in the doc as one long string
     temp = infile.read().decode("utf-8", "ignore") #first convert from utf-8 to unicode
     rawtext = temp.encode("utf-8", "ignore") #then convert from unicode to to utf-8
-    
-    # remove the weird formatting text
-    #formattingtext = open('formattingtext.txt').read().split('\n')
-    #for text in formattingtext:
-    #    rawtext = rawtext.replace(text,' ')
-    #rawtext = rawtext.encode('utf8')
 
-    ## define a regex pattern to tokenize
-    #pattern = r'''(?x) 			# set flag to allow verbose regexps
-    #        ([A-Z]\.)+ 			# abbreviations, e.g., U.S.A.
-    #        | \w+(-\w+)* 		# words with optional internal hyphens
-    #        | \$?\d+(\.\d+)?%?	# currency and percentages, e.g., $12.40, 82%
-    #        | \.\.\.			# ellipsis
-    #        | [][.,;"'?():-_`]	# these are separate tokens
-    #        '''
-
-    # tokenize the long string, remove stopwords, then do some stemming of tokens (haven't decided how to stem yet)
-    #tokens = nltk.regexp_tokenize(rawtext, pattern)
+    # tokenize the long string, remove stopwords,
+    # then do some other work to remove urls, punctuation only, other weird stuff
     tokens = TreebankWordTokenizer().tokenize(rawtext)
-    #wnl = nltk.WordNetLemmatizer()
-    #tokens = [wnl.lemmatize(t) for t in tokens]
-    #porter = nltk.PorterStemmer()
-    #tokens = [porter.stem(t) for t in tokens]
     tokens = remove_urls(tokens)
     tokens = remove_punctuation_only(tokens)
     tokens = remove_trailing_punctuation(tokens)
     tokens = remove_leading_punctuation(tokens)
     tokens = split_slashes_and_periods(tokens)
-    tokens = remove_stop_words(tokens, stopwords)
+    
     # print tokens to outfile
-
     text = ""
     for t in tokens:
         t = t.lower()
@@ -134,21 +94,29 @@ def tokenize_raw_text(infilename,outfilename):
         outfile.write(t + " ")
     outfile.close()
 
-    return text
+    return len(tokens)
     
-"""
-tokenize all docs and send to new folder
-"""
-raw_dir = "renamedrawtextdescriptionfiles/"
-tokenized_dir = "renamedtokenizeddocs/"
-#masterdocfile = open("alldocs.txt",'w')
-#masterdoclist = open("masterdoclist.txt",'w')
-for filename in os.listdir(raw_dir):
-	raw_docfilename = raw_dir + filename
-	tokenized_docfilename = tokenized_dir + "tokenized_" + filename
-	text = tokenize_raw_text(raw_docfilename,tokenized_docfilename)
-	#masterdocfile.write(text + "\n")
-	#print text
-	#masterdoclist.write(str(filename) + "\n")
-#masterdocfile.close()
-#masterdoclist.close()
+if (__name__ == '__main__'):
+    
+    # get the source and destination directory arguments
+    source_dir = sys.argv[1]
+    dest_dir = sys.argv[2]
+    
+    # iterate over the docs in the raw directory and
+    # send the tokenized versions to the destination directory
+    numDocs = 0
+    totalTokens = 0
+    for filename in os.listdir(source_dir):
+        
+        # create the source and dest file name
+        raw_docfilename = source_dir + filename # create the source and dest file name
+        tokenized_docfilename = dest_dir + "tokenized_" + filename
+        
+        # TOKENIZE THE DOCUMENT
+        docTokens = tokenize_raw_text(raw_docfilename,tokenized_docfilename)
+        
+        # compute info for potential debugging - we want to know how many tokens we have at this step!
+        totalTokens += docTokens
+        numDocs += 1
+    
+    print "Finished! Corpus has %i documents with %i tokens" %(numDocs, totalTokens)
