@@ -1,12 +1,22 @@
 
+#! /usr/bin/python
+
+# usage: python preprocess_for_modeling.py <location> <source-directory> <output-format> <CFt> <Dft>
+# output-format is either ctm or mallet
+# CFt is corpus frequency threshold (we want to keep only tokens that appear more than CFt times in the corpus)
+# DFt is document frequency threshold (we want to keep only tokens that appear at least once in more than DFt documents)
+# example: python reprocess_for_modeling.py joelc TokenizedText/ ctm 1 50
+
+from sys import argv
 import os
 import nltk
+
+script, location, source_dir, outputformat, CFt, DFt = argv  
 
 """
 Get the data
 """
-dir = "/Users/joelc/Desktop/Dropbox/Research/Dissertation/OpenIDEO/Pipeline/TokenizedText/"
-masterdoclist = open("masterdoclist.txt",'w')
+dir = "/Users/%s/Desktop/Dropbox/Research/Dissertation/OpenIDEO/Pipeline/%s" %(location, source_dir)
 masterdocnames = []
 documents = []
 for filename in os.listdir(dir):
@@ -16,10 +26,7 @@ for filename in os.listdir(dir):
         decodedtext = docfile.read().decode("utf-8","ignore")
         encodedtext = decodedtext.encode("ascii","ignore")
         documents.append(encodedtext)
-        masterdoclist.write(str(filename) + "\n")
         masterdocnames.append(str(filename))
-masterdoclist.close()
-#print documents
 
 """
 Get corpus-level word counts (i.e., how many times was word w used in the whole corpus?)
@@ -55,10 +62,10 @@ Outputs of this step are:
 
 print "Building feature space, screening out low frequency words and extra stopwords..."
 extrastopwords = [word.strip() for word in open("englishstopwords-mallet.txt").readlines()]
-corpfreq_threshold = 1 # change these to suit your fancy
-docfreq_threshold = 50
 masterWordList = []
 screenedDocuments = []
+corpfreq_threshold = int(CFt)
+docfreq_threshold = int(DFt)
 numwords = 0
 for i in xrange(len(documents)):
     
@@ -84,7 +91,8 @@ for i in xrange(len(documents)):
 write master vocabulary list to file
 """
 print "Writing master vocabulary list to file..."
-vocabfile = open("ctm-dist/vocab.dat", 'w')
+vocabfilename = "/Users/%s/Desktop/Dropbox/Research/Dissertation/OpenIDEO/Pipeline/SemanticModelData/%s/inputs/vocab_CF-%i_DF-%i.dat" %(location, outputformat, corpfreq_threshold, docfreq_threshold)
+vocabfile = open(vocabfilename, 'w')
 for i in xrange(0,len(masterWordList)):
 	if i+1 == len(masterWordList): # if we are at the last word
 		vocabfile.write(masterWordList[i])
@@ -100,32 +108,58 @@ so each line has a different number of parameters. THIS IS THE CORRECT FORMAT.
 """
 
 print "Making master doc file..."
-results = open("alldocs_CFgt1_DFgt50_CTMformat.txt",'w')
-for document in screenedDocuments:
-    
-    # get the doc's data
-    #print document
-    tokens = document.split() 
-    
-    # get the token list and token counts for this doc
-    doctoken_hash = {} #stores token counts
-    docTokens = [] #list of tokens
-    for token in tokens: 
-        if token not in docTokens: # we haven't seen it
-            docTokens.append(token) # add the token to our list of unique tokens in the doc
-            doctoken_hash[token] = 1 # create an entry in the token count hash
-        else:
-            doctoken_hash[token] = doctoken_hash[token]+1 # don't add the token to our list of unique tokens, but increment its count
+resultsfilename = "/Users/%s/Desktop/Dropbox/Research/Dissertation/OpenIDEO/Pipeline/SemanticModelData/%s/inputs/alldocs_CF-%i_DF-%i_%sformat.txt" %(location, outputformat, corpfreq_threshold, docfreq_threshold, outputformat)
 
-    # print the results to the results file
-    results.write(str(len(docTokens)) + " ") # number of unique tokens in docs ***OK***
-    index = 0 #this helps us keep our place in the MASTER token list
-    for token in docTokens:
-        if not(token == docTokens[len(docTokens)-1]): # if we aren't at the last token in the doc
-            results.write(str(masterWordList.index(token)) + ":" + str(doctoken_hash[token]) + " ")
-        else:
-            results.write(str(masterWordList.index(token)) + ":" + str(doctoken_hash[token]))
-    if document != screenedDocuments[-1]: # if we aren't processing the last doc
-        results.write("\n")
-results.close()
-print "Finished!"
+if outputformat == "ctm":	
+	
+	results = open(resultsfilename,'w')
+	
+	for document in screenedDocuments:
+		
+		# get the doc's data
+		tokens = document.split() 
+		
+		# get the token list and token counts for this doc
+		doctoken_hash = {} #stores token counts
+		docTokens = [] #list of tokens
+		for token in tokens: 
+			if token not in docTokens: # we haven't seen it
+				docTokens.append(token) # add the token to our list of unique tokens in the doc
+				doctoken_hash[token] = 1 # create an entry in the token count hash
+			else:
+				doctoken_hash[token] = doctoken_hash[token]+1 # don't add the token to our list of unique tokens, but increment its count
+	
+		# print the results to the results file
+		results.write(str(len(docTokens)) + " ") # number of unique tokens in docs ***OK***
+		for token in docTokens:
+			if not(token == docTokens[len(docTokens)-1]): # if we aren't at the last token in the doc
+				results.write(str(masterWordList.index(token)) + ":" + str(doctoken_hash[token]) + " ")
+			else:
+				results.write(str(masterWordList.index(token)) + ":" + str(doctoken_hash[token]))
+		if document != screenedDocuments[-1]: # if we aren't processing the last doc
+			results.write("\n")
+	results.close()
+	print "Finished!"
+	
+elif outputformat == "mallet":
+	
+	results = open(resultsfilename,'w')
+	
+	for document in screenedDocuments:
+		
+		# get the doc's data
+		tokens = document.split()
+		
+		documentname = masterdocnames[screenedDocuments.index(document)]
+		towrite = "%s %s " %(documentname, documentname)
+		for token in tokens:
+			towrite = towrite + token + " "
+		towrite = towrite.strip()
+		results.write(towrite)
+		if document != screenedDocuments[-1]: # if we aren't processing the last doc
+			results.write("\n")
+			
+else:
+	
+	print "Don't recognize that format!"
+	
