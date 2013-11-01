@@ -5,7 +5,7 @@
 # output-format is either ctm or mallet
 # CFt is corpus frequency threshold (we want to keep only tokens that appear more than CFt times in the corpus)
 # DFt is document frequency threshold (we want to keep only tokens that appear at least once in more than DFt documents)
-# example: python reprocess_for_modeling.py joelc TokenizedText/ ctm 1 50
+# example: python preprocess_for_modeling.py joelc TokenizedText/ ctm 1 50
 
 from sys import argv
 import os
