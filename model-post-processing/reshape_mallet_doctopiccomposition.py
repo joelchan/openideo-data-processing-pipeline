@@ -1,3 +1,7 @@
+#! /usr/bin/python
+#
+# usage: reshape_mallet_doctopiccomposition.py <rawfile> <reshapedfile> <numtopics>
+
 from sys import argv
 
 infilename = argv[1]
