@@ -4,7 +4,7 @@ PARENTDIR=/Users/joelc/Desktop/Dropbox/Research/Dissertation/OpenIDEO/Pipeline/
 OUTPUTDIR=/Users/joelc/Desktop/LDA_CF0_DF0_ASP_opt0/
 
 #NUMTOPICS=(12 25 50 100 150 200 300 400 500 600 700)
-NUMTOPICS=(12 25 50 200 500)
+NUMTOPICS=(100 300 400 600 700)
 INPUT=${PARENTDIR}SemanticModelData/mallet/inputs/openIDEO_CF0_DF0.mallet
 
 for NUMTOPIC in "${NUMTOPICS[@]}"
@@ -17,9 +17,9 @@ do
     do
     
         # make the names
-        OUTPUT_KEYS=${OUTPUTDIR}RawOutputs/CF1_DF50_${NUMTOPIC}_ASP_optim_keys-${RUN}.txt
-        OUTPUT_DOCS=${OUTPUTDIR}RawOutputs/CF1_DF50_${NUMTOPIC}_ASP_optim_composition-${RUN}.txt
-        OUTPUT_STATE=${OUTPUTDIR}RawOutputs/CF1_DF50_${NUMTOPIC}_ASP_optim_topic-state-${RUN}.gz
+        OUTPUT_KEYS=${OUTPUTDIR}RawOutputs/CF0_DF0_${NUMTOPIC}_ASP_optim_keys-${RUN}.txt
+        OUTPUT_DOCS=${OUTPUTDIR}RawOutputs/CF0_DF0_${NUMTOPIC}_ASP_optim_composition-${RUN}.txt
+        OUTPUT_STATE=${OUTPUTDIR}RawOutputs/CF0_DF0_${NUMTOPIC}_ASP_optim_topic-state-${RUN}.gz
             
         # train the topic model
         cd ${PARENTDIR}openideo-data-processing-pipeline/semantic-models/mallet-2.0.7
