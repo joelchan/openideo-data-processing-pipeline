@@ -27,7 +27,7 @@ do
             
         # reshape the output
         cd ${PARENTDIR}openideo-data-processing-pipeline/model-post-processing
-        OUTPUT_DOCS_RESHAPED=${OUTPUTDIR}ForValidation/sorted_CF1_DF50_${NUMTOPIC}_ASP_optim_composition-${RUN}.csv
+        OUTPUT_DOCS_RESHAPED=${OUTPUTDIR}ForValidation/sorted_CF0_DF0_${NUMTOPIC}_ASP_optim_composition-${RUN}.csv
         python reshape_mallet_doctopiccomposition.py $OUTPUT_DOCS $OUTPUT_DOCS_RESHAPED $NUMTOPIC
     
     done
