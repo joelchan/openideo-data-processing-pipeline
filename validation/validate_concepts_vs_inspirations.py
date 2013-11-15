@@ -96,6 +96,25 @@ def concepts_vs_insps(infilename,filenamestem):
     d_info = d_noext.split("_")
     numtopics = d_info[3]
     iternumber = d_info[-1].split("-")[1]
+
+    # this is temp stuff to print out the concept and inspiration cosines when i'm just running this on one file
+    conceptcosines = []
+    inspcosines = []
+    for dictlist in all_cosine_dictlist:
+        if dictlist["type"] == 'C':
+            conceptcosines.append(dictlist["cosine"])
+        else:
+            inspcosines.append(dictlist["cosine"])
+
+    conceptcosine_out = open("conceptcosines.txt",'w')
+    for cosine in conceptcosines:
+        conceptcosine_out.write(str(cosine) + "\n")
+    conceptcosine_out.close()
+    
+    inspcosine_out = open("inspcosines.txt",'w')
+    for cosine in inspcosines:
+        inspcosine_out.write(str(cosine) + "\n")
+    inspcosine_out.close()
     
     # write the results to file, print to screen
     towrite = "%s\t%s\t%s\t%.3f\t%.3f\t%i\t%.3f\t%.3f\t%i\t%.3f\t%.3f\n" %(numtopics, iternumber, d_noext, c_mean, c_std, c_size, i_mean, i_std, i_size, cohen_d, t_value)

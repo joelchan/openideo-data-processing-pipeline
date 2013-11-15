@@ -106,6 +106,17 @@ def within_vs_between(infilename):
     cohen_d_mean = numpy.mean(cohen_d_list)
     t_value_mean = numpy.mean(t_value_list)
     
+    # this is temp stuff to print out the within and between cosines when i'm just running this on one file
+    innercosine_out = open("innercosines.txt",'w')
+    for cosine in innercosines_master:
+        innercosine_out.write(str(cosine) + "\n")
+    innercosine_out.close()
+    
+    betweencosine_out = open("betweencosines.txt",'w')
+    for cosine in betweencosines_master:
+        betweencosine_out.write(str(cosine) + "\n")
+    betweencosine_out.close()
+    
     results = (innercosine_mean_overall, betweencosine_mean_overall, cohen_d_mean, t_value_mean)
     return results
 
