@@ -101,21 +101,22 @@ def concepts_vs_insps(infilename,filenamestem):
     conceptcosines = []
     inspcosines = []
     for dictlist in all_cosine_dictlist:
-        if dictlist["type"] == 'C':
-            conceptcosines.append(dictlist["cosine"])
+        data = "%s\t%f" %(dictlist["name"], dictlist["cosine"])
+        if dictlist["type"] == 'C':  
+            conceptcosines.append(data)
         else:
-            inspcosines.append(dictlist["cosine"])
+            inspcosines.append(data)
 
     conceptcosine_out = open("conceptcosines.txt",'w')
     for cosine in conceptcosines:
-        conceptcosine_out.write(str(cosine) + "\n")
+        conceptcosine_out.write(cosine + "\n")
     conceptcosine_out.close()
     
     inspcosine_out = open("inspcosines.txt",'w')
     for cosine in inspcosines:
-        inspcosine_out.write(str(cosine) + "\n")
+        inspcosine_out.write(cosine + "\n")
     inspcosine_out.close()
-    
+
     # write the results to file, print to screen
     towrite = "%s\t%s\t%s\t%.3f\t%.3f\t%i\t%.3f\t%.3f\t%i\t%.3f\t%.3f\n" %(numtopics, iternumber, d_noext, c_mean, c_std, c_size, i_mean, i_std, i_size, cohen_d, t_value)
     resultsfile.write(towrite)
