@@ -11,7 +11,7 @@
 
 from bs4 import BeautifulSoup
 from sys import argv, stdout
-import os
+import os, csv
 
 def extract_comments(filename, docname, challengename):
 
@@ -42,6 +42,9 @@ def extract_comments(filename, docname, challengename):
 				for t in textarr:
 					text = text + t.strip() + " "
 				
+				# get rough word counts
+				words = [w for w in text.split(" ") if any(c.isalpha() for c in w)]
+				
 				# get date		
 				datesoup = bodysoup.find(class_="comment-date")
 				date = datesoup.get_text()
@@ -51,15 +54,16 @@ def extract_comments(filename, docname, challengename):
 				continue
 				
 			# print out results
-			results.write("%s\t%s\t%s\t%s\t%s\n" %(challengename, docname, author_url, date, text))
+			resultswriter.writerow([challengename,docname,author_url,date,text,len(words)])
 
 # get args from command-line
 HTML_dir = argv[1]
 resultsfilename = argv[2]
 
 # open the results file and prepare header
-results = open(resultsfilename,'w') 
-results.write("challenge\tdocument\tauthor_url\tdate\ttext\n")
+resultsfile = open(resultsfilename,'w') 
+resultswriter = csv.writer(resultsfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_ALL)
+resultswriter.writerow(['challenge','document','author_url','date','commenttext','numwords'])
 
 # iterate over the sub-directories in the HTML folder (eah sub-dir is a challenge)
 for d in os.listdir(HTML_dir):
@@ -67,15 +71,15 @@ for d in os.listdir(HTML_dir):
 	if os.path.isdir(dir_name): #pesky .dsstore!!!!!!
 		print "Processing %s..." %d
 		files = os.listdir(dir_name)
-		numfiles = len(files)-4
+		files = [f for f in files if f.endswith(".html")] #screen out the pesky "other" files (e.g., hidden .dsstore)
+		numfiles = len(files)
 		processedfiles = 0
 		for f in files:
-			if f.endswith(".html"):
-				filename = dir_name + "/" + f #make the filename
-				#print "Processing %s..." %f
-				extract_comments(filename,f,d) #extract its comments data and dump in the results file
-				processedfiles +=1
-				stdout.write("\t%d of %d files processed...\r" %(processedfiles, numfiles))
-				stdout.flush()
+			filename = dir_name + "/" + f #make the filename
+			#print "Processing %s..." %f
+			extract_comments(filename,f,d) #extract its comments data and dump in the results file
+			processedfiles +=1
+			stdout.write("\t%d of %d files processed...\r" %(processedfiles, numfiles))
+			stdout.flush()
 		print "\t%d of %d files processed...\r" %(processedfiles, numfiles)
-results.close()
+resultsfile.close()
