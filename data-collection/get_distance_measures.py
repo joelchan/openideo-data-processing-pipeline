@@ -2,6 +2,10 @@ import numpy as np
 import pandas as pd
 import csv
 
+#############################################################################################################################################################
+# PRELIMINARIES AND FILE PATHS
+#############################################################################################################################################################
+
 # function for computing cosine
 def cosine(doc1, doc2):
     weights1 = doc_topic_weights[doc1]
@@ -23,12 +27,15 @@ def normalize_by_type(dataframe,desired_type,distances_raw):
             output[row['nodeID']] = np.nan
     return output
 
+weightsfilename = "/Users/joelc/Dropbox/Research/Dissertation/OpenIDEO/Pipeline/Validation/FINAL_malletLDA/sorted_CF0_DF0_400_ASP_optim_composition-6.csv"
+docmetadatafilename = "/Users/joelc/Dropbox/Research/dissertation/OpenIDEO/Pipeline/Challenge_and_High-level_Data/iPython intermediate inputs and outputs/DocLevel.csv"
+pathlevelfilename = "/Users/joelc/Dropbox/Research/Dissertation/OpenIDEO/Pipeline/Paths/_CSVversions/paths_all.csv"
+
 #############################################################################################################################################################
 # COMPUTE DISTANCE AT THE DOC-LEVEL
 #############################################################################################################################################################
 print "Getting LDA weights from file..."
 # read in the doc-topic weights
-weightsfilename = "/Users/joelc/Dropbox/Research/Dissertation/OpenIDEO/Pipeline/Validation/FINAL_malletLDA/sorted_CF0_DF0_400_ASP_optim_composition-6.csv"
 doc_names = []
 doc_topic_weights = {}
 with open(weightsfilename, 'rU') as csvfile:
@@ -41,7 +48,6 @@ with open(weightsfilename, 'rU') as csvfile:
 csvfile.close()
 
 # create doc-level data frame
-docmetadatafilename = "/Users/joelc/Dropbox/Research/dissertation/OpenIDEO/Pipeline/Challenge_and_High-level_Data/iPython intermediate inputs and outputs/DocLevel.csv"
 docmetadata_df = pd.read_csv(docmetadatafilename)
 doclevel_df = pd.DataFrame(doc_names,columns=['nodeID']) #use the doc name list from the LDA output file so that we have challenge briefs to start with
 doclevel_df = pd.merge(doclevel_df,docmetadata_df,how='outer') #merge by outer so that we get the missing voting_C-119 and voting_I-369 into the doclevel
@@ -69,6 +75,7 @@ for name, group in doclevel_df.groupby(['challenge']):
     
     group_doc_names = [n for n in group.nodeID]
     
+    # raw distances
     group_distances_raw = {}
     for group_doc_name in group_doc_names:
         if 'challengebrief' not in group_doc_name and group_doc_name in doc_names:
@@ -78,12 +85,12 @@ for name, group in doclevel_df.groupby(['challenge']):
             group_distances_raw[group_doc_name] = np.nan
     distances_raw.update(group_distances_raw)
     
+    # normalized for all relative to both inspirations and concepts
     group_distances_z_all = {}
-    group_raw_distances = [value for value in group_distances_raw.values() if not np.isnan(value)]
+    group_raw_distances = [value for value in group_distances_raw.values() if not np.isnan(value)] # drop the missing values so we can compute means and sds
     mean = np.mean(group_raw_distances)
     sd = np.std(group_raw_distances)
-    for group_doc_name, doc_distance_raw in group_distances_raw.items():
-        
+    for group_doc_name, doc_distance_raw in group_distances_raw.items():    
         if not np.isnan(doc_distance_raw):
             distance = (doc_distance_raw-mean)/sd
             group_distances_z_all[group_doc_name] = distance
@@ -100,16 +107,10 @@ for name, group in doclevel_df.groupby(['challenge']):
     distances_z_concept.update(group_distances_z_concept)
     
 # put all computed values back into the master data frame
-doclevel_df['distance_raw'] = np.nan
-doclevel_df['distance_z_all'] = np.nan
-doclevel_df['distance_z_insp'] = np.nan
-doclevel_df['distance_z_concept'] = np.nan
-for rowindex, row in doclevel_df.iterrows():
-    #print row.ix['distance_raw']
-    doclevel_df.distance_raw[rowindex] = distances_raw[row['nodeID']]
-    doclevel_df.distance_z_all[rowindex] = distances_z_all[row['nodeID']]
-    doclevel_df.distance_z_insp[rowindex] = distances_z_insp[row['nodeID']]
-    doclevel_df.distance_z_concept[rowindex] = distances_z_concept[row['nodeID']]
+doclevel_df['distance_raw'] = [distances_raw[doc] for doc in doclevel_df['nodeID']]
+doclevel_df['distance_z_all'] = [distances_z_all[doc] for doc in doclevel_df['nodeID']]
+doclevel_df['distance_z_insp'] = [distances_z_insp[doc] for doc in doclevel_df['nodeID']]
+doclevel_df['distance_z_concept'] = [distances_z_concept[doc] for doc in doclevel_df['nodeID']]
 
 # delete the challengebrief rows
 doclevel_df = doclevel_df[pd.notnull(doclevel_df.views)]
@@ -122,7 +123,7 @@ doclevel_df.to_excel("DocLevel_AfterDistance.xlsx")
 #############################################################################################################################################################
 print "Reading in paths from file..."
 # read in the paths, create data for challenge and source type
-pathlevel_df = pd.read_csv("/Users/joelc/Dropbox/Research/Dissertation/OpenIDEO/Pipeline/Paths/_CSVversions/paths_all.csv")
+pathlevel_df = pd.read_csv(pathlevelfilename)
 pathlevel_df['challenge'] = [n.split('_')[0] for n in pathlevel_df.seed_ID]
 pathlevel_df['sourcetype'] = [n.split('_')[1] for n in pathlevel_df.source_ID]
 pathlevel_df['sourcetype'] = [n[0] for n in pathlevel_df.sourcetype]
