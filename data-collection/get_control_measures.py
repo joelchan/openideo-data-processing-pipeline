@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from pandas import Series, DataFrame
+from sys import argv
 
 #############################################################################################################################################################
 # PRELIMINARIES AND PATHS
@@ -77,11 +78,14 @@ def format_date_string(unformatted):
     formatted = "%s-%s-%s %s:%s" %(year, month, day, hour, minute)
     return formatted
 
-doclevelfilename = "/Users/joelc/Dropbox/Research/dissertation/OpenIDEO/Pipeline/Challenge_and_High-level_Data/iPython intermediate inputs and outputs/DocLevel_AfterDistance.xlsx"
-pathlevelfilename = "/Users/joelc/Dropbox/Research/dissertation/OpenIDEO/Pipeline/Challenge_and_High-level_Data/iPython intermediate inputs and outputs/PathLevel_AfterDistance.xlsx"
-conceptlevelfilename = "/Users/joelc/Dropbox/Research/dissertation/OpenIDEO/Pipeline/Challenge_and_High-level_Data/iPython intermediate inputs and outputs/ConceptLevel_AfterDistance.xlsx"
-rawcommentsfilename = "/Users/joelc/Dropbox/Research/dissertation/OpenIDEO/Pipeline/Challenge_and_High-level_Data/AllCommentsData_2013-12-25.csv"
-challengemetadatafilename = "/Users/joelc/Dropbox/Research/dissertation/OpenIDEO/Pipeline/Challenge_and_High-level_Data/iPython intermediate inputs and outputs/ChallengeMetadata.csv"
+parentdirpath = "/Users/joelc/Dropbox/Research/dissertation/"
+if argv[1] == "jchan":
+    parentdirpath = "/Users/jchan/Desktop/Dropbox/Research/Dissertation/"
+doclevelfilename = "%sOpenIDEO/Pipeline/Challenge_and_High-level_Data/iPython intermediate inputs and outputs/DocLevel_AfterDistance.xlsx" %parentdirpath
+pathlevelfilename = "%sOpenIDEO/Pipeline/Challenge_and_High-level_Data/iPython intermediate inputs and outputs/PathLevel_AfterDistance.xlsx" %parentdirpath
+conceptlevelfilename = "%sOpenIDEO/Pipeline/Challenge_and_High-level_Data/iPython intermediate inputs and outputs/ConceptLevel_AfterDistance.xlsx" %parentdirpath
+rawcommentsfilename = "%sOpenIDEO/Pipeline/Challenge_and_High-level_Data/AllCommentsData_2013-12-25.csv" %parentdirpath
+challengemetadatafilename = "%sOpenIDEO/Pipeline/Challenge_and_High-level_Data/iPython intermediate inputs and outputs/ChallengeMetadata.csv" %parentdirpath
 
 #############################################################################################################################################################
 # COMPUTE SOURCE QUALITY
@@ -99,7 +103,7 @@ print "\tPutting shortlist data into pathlevel..."
 shortlist_df = DataFrame(doclevel_df['nodeID'],columns=['source_ID'])
 shortlist_df['source_shortlist'] = doclevel_df['shortlist']
 # merge the subset dataframe into pathlevel
-pathlevel_df = pd.merge(pathlevel_df,shortlist_df)
+pathlevel_df = pd.merge(pathlevel_df,shortlist_df,how='left')
 
 # now compute in conceptlevel df
 print "\tCompute source shortlist data by concept..."
@@ -110,7 +114,7 @@ for name, group in pathlevel_df.groupby(['seed_ID']):
     rowdict['num_shortlisted_sources'] = np.sum(group.source_shortlist)
     conceptdata.append(rowdict)
 conceptdata_df = pd.DataFrame(conceptdata)
-conceptlevel_df = pd.merge(conceptlevel_df,conceptdata_df) # merge into concept level 
+conceptlevel_df = pd.merge(conceptlevel_df,conceptdata_df,how='left') # merge into concept level 
 
 # create binary indicator
 conceptlevel_df['any_shortlisted_sources'] = 0
@@ -161,6 +165,6 @@ conceptlevel_df = pd.merge(conceptlevel_df,concept_comments,how='left',left_on='
 conceptlevel_df.comments_preshortlist[pd.isnull(conceptlevel_df['comments_preshortlist'])] = 0
 
 # finished! output for analysis
+outfilename = "%sOpenIDEO/Pipeline/Challenge_and_High-level_Data/iPython intermediate inputs and outputs/ConceptLevel_AfterDistanceAndControls.xlsx" %parentdirpath
+conceptlevel_df.to_excel(outfilename,sheet_name='data')
 print "Finished!"
-conceptlevel_df.to_excel("ConceptLevel_AfterDistanceAndControls.xlsx")
-
