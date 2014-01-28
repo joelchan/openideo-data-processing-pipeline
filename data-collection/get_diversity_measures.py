@@ -4,9 +4,9 @@ import itertools as it
 import csv
 from sys import stdout
 
-datafilename = "/Users/joelc/Dropbox/Research/dissertation/OpenIDEO/Pipeline/Challenge_and_High-level_Data/iPython intermediate inputs and outputs/ConceptLevel_AfterDistanceAndControls.xlsx"
-pathfilename = "/Users/joelc/Dropbox/Research/Dissertation/OpenIDEO/Pipeline/Paths/_CSVversions/paths_all.csv"
-weightsfilename = "/Users/joelc/Dropbox/Research/Dissertation/OpenIDEO/Pipeline/Validation/FINAL_malletLDA/sorted_CF0_DF0_400_ASP_optim_composition-6.csv"
+datafilename = "/Users/jchan/Desktop/Dropbox/Research/dissertation/OpenIDEO/Pipeline/Challenge_and_High-level_Data/iPython intermediate inputs and outputs/ConceptLevel_AfterDistanceAndControls.xlsx"
+pathfilename = "/Users/jchan/Desktop/Dropbox/Research/Dissertation/OpenIDEO/Pipeline/Paths/_CSVversions/paths_all.csv"
+weightsfilename = "/Users/jchan/Desktop/Dropbox/Research/Dissertation/OpenIDEO/Pipeline/Validation/FINAL_malletLDA/sorted_CF0_DF0_400_ASP_optim_composition-6.csv"
 
 # read in the doc-topic weights
 print "Reading in weights..."
@@ -52,32 +52,32 @@ for concept in concepts:
         #generate all possible pairs
         source_combos = [x for x in it.combinations(sources,2)] #n choose 2
         #get all the cosines
-        cosines = [np.dot(doc_topic_weights[combo[0]],doc_topic_weights[combo[1]]) for combo in source_combos]
+        distances = [0-np.dot(doc_topic_weights[combo[0]],doc_topic_weights[combo[1]]) for combo in source_combos]
         #summary statistics: mean, max, min, sd
-        row_dict['both_div_mean'] = np.mean(cosines)
-        row_dict['both_div_min'] = np.min(cosines)
-        row_dict['both_div_max'] = np.max(cosines)
-        row_dict['both_div_sd'] = np.std(cosines)
+        row_dict['both_div_mean'] = np.mean(distances)
+        row_dict['both_div_min'] = np.min(distances)
+        row_dict['both_div_max'] = np.max(distances)
+        row_dict['both_div_sd'] = np.std(distances)
     if len(sources_concepts) > 1: #concepts
         #generate all possible pairs
         source_combos = [x for x in it.combinations(sources_concepts,2)] #n choose 2
         #get all the cosines
-        cosines = [np.dot(doc_topic_weights[combo[0]],doc_topic_weights[combo[1]]) for combo in source_combos]
+        distances = [0-np.dot(doc_topic_weights[combo[0]],doc_topic_weights[combo[1]]) for combo in source_combos]
         #summary statistics: mean, max, min, sd
-        row_dict['concept_div_mean'] = np.mean(cosines)
-        row_dict['concept_div_min'] = np.min(cosines)
-        row_dict['concept_div_max'] = np.max(cosines)
-        row_dict['concept_div_sd'] = np.std(cosines)
+        row_dict['concept_div_mean'] = np.mean(distances)
+        row_dict['concept_div_min'] = np.min(distances)
+        row_dict['concept_div_max'] = np.max(distances)
+        row_dict['concept_div_sd'] = np.std(distances)
     if len(sources_inspirations) > 1: #concepts
         #generate all possible pairs
         source_combos = [x for x in it.combinations(sources_inspirations,2)] #n choose 2
         #get all the cosines
-        cosines = [np.dot(doc_topic_weights[combo[0]],doc_topic_weights[combo[1]]) for combo in source_combos]
+        distances = [0-np.dot(doc_topic_weights[combo[0]],doc_topic_weights[combo[1]]) for combo in source_combos]
         #summary statistics: mean, max, min, sd
-        row_dict['insp_div_mean'] = np.mean(cosines)
-        row_dict['insp_div_min'] = np.min(cosines)
-        row_dict['insp_div_max'] = np.max(cosines)
-        row_dict['insp_div_sd'] = np.std(cosines)
+        row_dict['insp_div_mean'] = np.mean(distances)
+        row_dict['insp_div_min'] = np.min(distances)
+        row_dict['insp_div_max'] = np.max(distances)
+        row_dict['insp_div_sd'] = np.std(distances)
     if len(row_dict) > 0: 
         concept_diversity.append(row_dict)
     counter += 1
