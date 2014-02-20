@@ -1,6 +1,15 @@
+#! /usr/bin/python
+#
+# This code computes source distance measures
+#
+# usage: python get_distance_measures.py <levelRange>
+#
+# where levelRange defines the range of levels (inclusive) in the genealogy you want to consider for the source distance measures
+# e.g., 1-1 says only sources at level-1, 2-5 says only sources from levels 2 to 5
+
 import numpy as np
 import pandas as pd
-import csv
+import csv, sys
 
 #############################################################################################################################################################
 # PRELIMINARIES AND FILE PATHS
@@ -26,6 +35,11 @@ def normalize_by_type(dataframe,desired_type,distances_raw):
         else:
             output[row['nodeID']] = np.nan
     return output
+
+levelRange = sys.argv[1] #this command-line parameter determines range of levels to consider in the genealogy (1 = immediate)
+fromLevel = int(levelRange.split('-')[0])
+toLevel = int(levelRange.split('-')[1])
+levels = [i for i in xrange(fromLevel,toLevel+1)] #create list of levels, inclusive of the upper limit (toLevel)
 
 weightsfilename = "/Users/joelc/Dropbox/Research/Dissertation/OpenIDEO/Pipeline/Validation/FINAL_malletLDA/sorted_CF0_DF0_400_ASP_optim_composition-6.csv"
 docmetadatafilename = "/Users/joelc/Dropbox/Research/dissertation/OpenIDEO/Pipeline/Challenge_and_High-level_Data/iPython intermediate inputs and outputs/DocLevel.csv"
@@ -116,7 +130,7 @@ doclevel_df['distance_z_concept'] = [distances_z_concept[doc] for doc in docleve
 doclevel_df = doclevel_df[pd.notnull(doclevel_df.views)]
 
 # print out for later use
-doclevel_df.to_excel("DocLevel_AfterDistance.xlsx")
+doclevel_df.to_excel("DocLevel_AfterDistance_Level.xlsx")
 
 #############################################################################################################################################################
 # COMPUTE DISTANCE AT THE CONCEPT-LEVEL
@@ -128,8 +142,8 @@ pathlevel_df['challenge'] = [n.split('_')[0] for n in pathlevel_df.seed_ID]
 pathlevel_df['sourcetype'] = [n.split('_')[1] for n in pathlevel_df.source_ID]
 pathlevel_df['sourcetype'] = [n[0] for n in pathlevel_df.sourcetype]
 
-# trim to only immediate paths for now to reduce computation time and memory usage - this will change later when we want to compute last N sources, for example
-pathlevel_df = pathlevel_df[pathlevel_df['level'] == 1]
+# trim to only levels we care about (defined in levelRange). isin method from http://stackoverflow.com/questions/12065885/how-to-filter-the-dataframe-rows-of-pandas-by-within-in
+pathlevel_df = pathlevel_df[pathlevel_df['level'].isin(levels)]
 
 print "Importing distance data into path-level dataframe..."
 # grab the source_ID distances
@@ -139,7 +153,7 @@ pathlevel_df['source_dist_z_insp'] = [float(doclevel_df[doclevel_df.nodeID == s]
 pathlevel_df['source_dist_z_concept'] = [float(doclevel_df[doclevel_df.nodeID == s].distance_z_concept) for s in pathlevel_df.source_ID]
 
 # print out for later use
-pathlevel_df.to_excel("PathLevel_AfterDistance.xlsx")
+pathlevel_df.to_excel("PathLevel_AfterDistance_Level%s.xlsx" %levelRange)
 
 print "Computing distance measures at concept-level..."
 # Now get all the concept-level measures.
@@ -209,6 +223,6 @@ conceptlevel_df = doclevel_df[doclevel_df['type'] == 'concept']
 conceptlevel_df_merged = pd.DataFrame.merge(conceptlevel_df,conceptdata_df,how='left')
 
 # print out for later use
-conceptlevel_df_merged.to_excel("ConceptLevel_AfterDistance.xlsx")
+conceptlevel_df_merged.to_excel("ConceptLevel_AfterDistance_Level%s.xlsx" %levelRange)
 
 print "Finished!"
