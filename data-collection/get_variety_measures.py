@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import itertools as it
-import csv
+import csv, sys
 
 def get_top_topics(sourceList,docTopicWeights,nTopics,unique=True):
     topTopics = []
@@ -15,11 +15,17 @@ def get_top_topics(sourceList,docTopicWeights,nTopics,unique=True):
                     topTopics.append(weights[i][1])
             else:
                 topTopics.append(weights[i][1])
-    return sorted(list(topTopics)) # return it as a sorted list so it's a bit easier to work with
+    return topTopics # return it as a sorted list so it's a bit easier to work with
 
-datafilename = "/Users/joelc/Dropbox/Research/dissertation/OpenIDEO/Pipeline/Challenge_and_High-level_Data/iPython intermediate inputs and outputs/ConceptLevel_AfterDistanceAndControls.xlsx"
-pathfilename = "/Users/joelc/Dropbox/Research/Dissertation/OpenIDEO/Pipeline/Paths/_CSVversions/paths_all.csv"
-weightsfilename = "/Users/joelc/Dropbox/Research/Dissertation/OpenIDEO/Pipeline/Validation/FINAL_malletLDA/sorted_CF0_DF0_400_ASP_optim_composition-6.csv"
+datafilename = "/Users/jchan/Desktop/Dropbox/Research/dissertation/OpenIDEO/Pipeline/Challenge_and_High-level_Data/iPython intermediate inputs and outputs/ConceptLevel_AfterDistanceAndControls.xlsx"
+pathfilename = "/Users/jchan/Desktop/Dropbox/Research/Dissertation/OpenIDEO/Pipeline/Paths/_CSVversions/paths_all.csv"
+weightsfilename = "/Users/jchan/Desktop/Dropbox/Research/Dissertation/OpenIDEO/Pipeline/Validation/FINAL_malletLDA/sorted_CF0_DF0_400_ASP_optim_composition-6.csv"
+levelRange = sys.argv[1] #this command-line parameter determines range of levels to consider in the genealogy (1 = immediate)
+fromLevel = int(levelRange.split('-')[0])
+toLevel = int(levelRange.split('-')[1])
+levels = [i for i in xrange(fromLevel,toLevel+1)] #create list of levels, inclusive of the upper limit (toLevel)
+
+numTopTopics = int(sys.argv[2])
 
 # read in the doc-topic weights
 print "Reading in weights..."
@@ -39,20 +45,31 @@ csvfile.close
 # read in the paths, create data for seed type so we can select later (for the set); may want to add source type later if we want to grab diversity only for inspirations
 print "Reading in paths..."
 pathlevel_df = pd.read_csv(pathfilename)
-pathlevel_df = pathlevel_df[pathlevel_df['level'] == 1] # trim to only immediate paths for now to reduce computation time and memory usage - this will change later when we want to compute last N sources, for example
+pathlevel_df = pathlevel_df[pathlevel_df['level'].isin(levels)] # trim to only desired levels in genealogy
 pathlevel_df['seedtype'] = [n.split('_')[1] for n in pathlevel_df.seed_ID] #create seed type
 pathlevel_df['seedtype'] = [n[0] for n in pathlevel_df.seedtype]
 pathlevel_df['challenge'] = [n.split('_')[0] for n in pathlevel_df.seed_ID]
 
-sourceList = ['bone-marrow_C-001','bone-marrow_C-002','bone-marrow_C-003']
-sourceTopTopics = get_top_topics(sourceList,doc_topic_weights,5)
-print sourceTopTopics
-print len(sourceTopTopics)
-
+#########################
+# compute variety
+#########################
+conceptdata = []
 for challengeName, challengeDF in pathlevel_df.groupby('challenge'):
     concepts = set()
     concepts.update(challengeDF[challengeDF['seedtype'] == 'C']['seed_ID'])
-    challengeTopTopics = get_top_topics(challengeDF['source_ID'],doc_topic_weights,5) #get its top topics
+    challengeTopTopics = get_top_topics(challengeDF['source_ID'],doc_topic_weights,numTopTopics) #get its top topics
+    #print challengeName
+    #print "\tnumConcepts: %i\tnumTopTopics: %i\tnumPossibleTopics: %i\tpropPossibleTopics: %.2f" %(len(concepts), len(challengeTopTopics), len(concepts)*5, len(challengeTopTopics)/float(len(concepts)*5))
     for concept in concepts:
-        conceptSources = challengeDF[challengeDF['seed_ID'] == concept]['source_ID'] #get it sources
+        conceptDict = {"nodeID":concept}
+        conceptSources = challengeDF[challengeDF['seed_ID'] == concept]['source_ID'] #get its sources
         conceptTopTopics = get_top_topics(conceptSources,doc_topic_weights,5,unique=False) #get its top topics
+        sumVar = 0
+        for topic in challengeTopTopics:
+            pTopic = conceptTopTopics.count(topic)/float(len(conceptTopTopics))
+            if pTopic > 0:
+                sumVar += pTopic*np.log(pTopic)
+        conceptDict['sourceVariety'] = -1*sumVar
+        conceptdata.append(conceptDict)
+conceptDF = pd.DataFrame(conceptdata)
+conceptDF.to_csv("test.csv")   
