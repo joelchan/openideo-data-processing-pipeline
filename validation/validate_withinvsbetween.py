@@ -12,15 +12,22 @@
 # first file summarizes the mean within (with sd), mean between (with sd)
 # second file will spit out mean within (with sd), 
 
-import csv, itertools, numpy, os
+import csv, itertools, os
+import numpy as np
 from scipy import stats
 from sys import argv
+
+def cos(weights1, weights2):
+    dotProduct = np.dot(weights1,weights2)
+    mag1 = np.sqrt(sum([np.square(weight) for weight in weights1]))
+    mag2 = np.sqrt(sum([np.square(weight) for weight in weights2]))
+    return dotProduct/(mag1*mag2)
 
 def within_vs_between(infilename):
     # read in the data
     #infilename = "/Users/jchan/Desktop/Dropbox/Research/Dissertation/OpenIDEO/Pipeline/Validation/LDA_CF1_DF50_ASP_opt10/ForValidation/sorted_CF1_DF50_12_ASP_optim_composition-6.csv"
     rawdata = []
-    filereader = csv.reader(open(infilename, 'rb'))
+    filereader = csv.reader(open(infilename, 'rU'))
     for row in filereader:
         rawdata.append(','.join(row))
     rawdata = rawdata[1:] #discard header
@@ -73,22 +80,22 @@ def within_vs_between(infilename):
         # inner pairs
         innercosines = []
         for pair in innerpairs:
-            cosine = numpy.dot(doc_topic_weights[pair[0]],doc_topic_weights[pair[1]])
+            cosine = cos(doc_topic_weights[pair[0]],doc_topic_weights[pair[1]])
             innercosines.append(cosine)
             innercosines_master.append(cosine)
-        innercosine_mean = numpy.mean(innercosines)
-        innercosine_sd = numpy.std(innercosines)
+        innercosine_mean = np.mean(innercosines)
+        innercosine_sd = np.std(innercosines)
         innercosine_N = len(innercosines)
         print "\tmean cosine for inner pairs = %.3f (SD = %.3f, N = %i)" %(innercosine_mean, innercosine_sd, innercosine_N)
         
         # between pairs
         betweencosines = []
         for pair in betweenpairs:
-            cosine = numpy.dot(doc_topic_weights[pair[0]],doc_topic_weights[pair[1]])
+            cosine = cos(doc_topic_weights[pair[0]],doc_topic_weights[pair[1]])
             betweencosines.append(cosine)
             betweencosines_master.append(cosine)
-        betweencosine_mean = numpy.mean(betweencosines)
-        betweencosine_sd = numpy.std(betweencosines)
+        betweencosine_mean = np.mean(betweencosines)
+        betweencosine_sd = np.std(betweencosines)
         betweencosine_N = len(betweencosines)
         print "\tmean cosine for between pairs = %.3f (SD = %.3f, N = %i)" %(betweencosine_mean, betweencosine_sd, betweencosine_N)
         
@@ -101,10 +108,10 @@ def within_vs_between(infilename):
         print "\t\tthe difference in means is d = %.3f, t = %.3f, p = %.3f" %(cohen_d, t_value, p_value)
     
     #summaries
-    innercosine_mean_overall = numpy.mean(innercosines_master)
-    betweencosine_mean_overall = numpy.mean(betweencosines_master)
-    cohen_d_mean = numpy.mean(cohen_d_list)
-    t_value_mean = numpy.mean(t_value_list)
+    innercosine_mean_overall = np.mean(innercosines_master)
+    betweencosine_mean_overall = np.mean(betweencosines_master)
+    cohen_d_mean = np.mean(cohen_d_list)
+    t_value_mean = np.mean(t_value_list)
     
     # this is temp stuff to print out the within and between cosines when i'm just running this on one file
     innercosine_out = open("innercosines.txt",'w')
