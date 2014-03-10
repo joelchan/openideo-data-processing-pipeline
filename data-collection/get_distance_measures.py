@@ -19,7 +19,10 @@ import csv, sys
 def cosine(doc1, doc2):
     weights1 = doc_topic_weights[doc1]
     weights2 = doc_topic_weights[doc2]
-    return np.dot(weights1, weights2)
+    dotProduct = np.dot(weights1,weights2)
+    mag1 = np.sqrt(sum([np.square(weight) for weight in weights1]))
+    mag2 = np.sqrt(sum([np.square(weight) for weight in weights2]))
+    return dotProduct/(mag1*mag2)
 
 # normalize by type
 def normalize_by_type(dataframe,desired_type,distances_raw):
@@ -41,9 +44,9 @@ fromLevel = int(levelRange.split('-')[0])
 toLevel = int(levelRange.split('-')[1])
 levels = [i for i in xrange(fromLevel,toLevel+1)] #create list of levels, inclusive of the upper limit (toLevel)
 
-weightsfilename = "/Users/joelc/Dropbox/Research/Dissertation/OpenIDEO/Pipeline/Validation/FINAL_malletLDA/sorted_CF0_DF0_400_ASP_optim_composition-6.csv"
-docmetadatafilename = "/Users/joelc/Dropbox/Research/dissertation/OpenIDEO/Pipeline/Challenge_and_High-level_Data/iPython intermediate inputs and outputs/DocLevel.csv"
-pathlevelfilename = "/Users/joelc/Dropbox/Research/Dissertation/OpenIDEO/Pipeline/Paths/_CSVversions/paths_all.csv"
+weightsfilename = "/Users/jchan/Desktop/Dropbox/Research/Dissertation/OpenIDEO/Pipeline/Validation/FINAL_malletLDA/sorted_CF0_DF0_400_ASP_optim_composition-6.csv"
+docmetadatafilename = "/Users/jchan/Desktop/Dropbox/Research/dissertation/OpenIDEO/Pipeline/Challenge_and_High-level_Data/iPython intermediate inputs and outputs/DocLevel.csv"
+pathlevelfilename = "/Users/jchan/Desktop/Dropbox/Research/Dissertation/OpenIDEO/Pipeline/Paths/_CSVversions/paths_all.csv"
 
 #############################################################################################################################################################
 # COMPUTE DISTANCE AT THE DOC-LEVEL
@@ -130,7 +133,7 @@ doclevel_df['distance_z_concept'] = [distances_z_concept[doc] for doc in docleve
 doclevel_df = doclevel_df[pd.notnull(doclevel_df.views)]
 
 # print out for later use
-doclevel_df.to_excel("DocLevel_AfterDistance_Level.xlsx")
+#doclevel_df.to_excel("DocLevel_AfterDistance_Level.xlsx")
 
 #############################################################################################################################################################
 # COMPUTE DISTANCE AT THE CONCEPT-LEVEL
@@ -153,7 +156,7 @@ pathlevel_df['source_dist_z_insp'] = [float(doclevel_df[doclevel_df.nodeID == s]
 pathlevel_df['source_dist_z_concept'] = [float(doclevel_df[doclevel_df.nodeID == s].distance_z_concept) for s in pathlevel_df.source_ID]
 
 # print out for later use
-pathlevel_df.to_excel("PathLevel_AfterDistance_Level%s.xlsx" %levelRange)
+#pathlevel_df.to_excel("PathLevel_AfterDistance_Level%s.xlsx" %levelRange)
 
 print "Computing distance measures at concept-level..."
 # Now get all the concept-level measures.
@@ -223,6 +226,6 @@ conceptlevel_df = doclevel_df[doclevel_df['type'] == 'concept']
 conceptlevel_df_merged = pd.DataFrame.merge(conceptlevel_df,conceptdata_df,how='left')
 
 # print out for later use
-conceptlevel_df_merged.to_excel("ConceptLevel_AfterDistance_Level%s.xlsx" %levelRange)
+conceptlevel_df_merged.to_excel("ConceptLevel_AfterDistance_Level%s_CORRECTED.xlsx" %levelRange)
 
 print "Finished!"
