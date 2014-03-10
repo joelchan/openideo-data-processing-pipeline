@@ -8,6 +8,12 @@ import numpy
 import os
 import pandas as pd
 
+def cos(weights1, weights2):
+    dotProduct = numpy.dot(weights1,weights2)
+    mag1 = numpy.sqrt(sum([numpy.square(weight) for weight in weights1]))
+    mag2 = numpy.sqrt(sum([numpy.square(weight) for weight in weights2]))
+    return dotProduct/(mag1*mag2)
+
 def read_data(filename):
 	"""
 	Read in data from a file and return a list with each element being one line from the file.
@@ -54,7 +60,7 @@ def concepts_vs_insps(infilename,filenamestem):
             current_cosine_data.append(doc_name.split("_")[1]) #challengename
             current_cosine_data.append(doc_name.split("_")[2][0]) #doctype (C or I)
             current_cosine_data.append(doc_name)
-            current_cosine_data.append(numpy.dot(cb_weights,doc_topic_weights[doc_names[i]]))
+            current_cosine_data.append(cos(cb_weights,doc_topic_weights[doc_names[i]]))
             all_cosine_data.append(current_cosine_data)
     
     ## print out the list of lists for intermediate processing        
