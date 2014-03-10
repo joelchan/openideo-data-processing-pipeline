@@ -3,8 +3,14 @@
 
 from sys import argv
 from scipy.stats.stats import pearsonr
-import numpy
+import numpy as np
 import os
+
+def cos(weights1, weights2):
+    dotProduct = np.dot(weights1,weights2)
+    mag1 = np.sqrt(sum([np.square(weight) for weight in weights1]))
+    mag2 = np.sqrt(sum([np.square(weight) for weight in weights2]))
+    return dotProduct/(mag1*mag2)
 
 def benchmark(infilename,anchorindex,slicestartindex, slicestopindex, benchmarkdata,resultsfile):
     
@@ -12,9 +18,9 @@ def benchmark(infilename,anchorindex,slicestartindex, slicestopindex, benchmarkd
     Read in challenge brief and inspirations
     """
     doc_topic_weightsfile = open(infilename)
-    doc_topic_weights = []
-    for line in doc_topic_weightsfile.readlines():
-        doc_topic_weights.append(line)
+    doc_topic_weights = [line for line in doc_topic_weightsfile.read().replace('\r\n', '\n').replace('\r', '\n').split('\n')]
+    #for line in doc_topic_weightsfile.readlines():
+    #    doc_topic_weights.append(line)
         
     #challenge brief
     rawquery = doc_topic_weights[anchorindex].strip().split(",")
@@ -38,7 +44,7 @@ def benchmark(infilename,anchorindex,slicestartindex, slicestopindex, benchmarkd
     """
     cosines = []
     for index in cleanindex:
-        cosines.append(numpy.dot(index,query))
+        cosines.append(cos(index,query))
     
     """
     Correlate cosines with human judgments, print to screen, save to results file
