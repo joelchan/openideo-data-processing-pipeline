@@ -29,7 +29,7 @@ def cosines_from_self(myself,mysources):
     """
     cosines = []
     for source in mysources:
-        cosines.append(cosine(myself,source))
+        cosines.append(-1*cosine(myself,source)) # remember, we are reversing the cosine
     return cosines
 
 levelRange = sys.argv[1] #this command-line parameter determines range of levels to consider in the genealogy (1 = immediate)
