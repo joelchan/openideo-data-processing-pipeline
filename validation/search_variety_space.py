@@ -143,6 +143,23 @@ def discrete_entropy(topTopics):
         sumVar += pTopic*np.log(pTopic)
     return -1*sumVar
 
+def corrected_discrete_entropy(topTopics):
+    """
+    Correction based on Biemann & Kearney (2010) to make different-sized groups more comparable
+    Uncorrected entropy underestimates variety of smaller groups even if distributions are equally spread out
+    """
+    uniqueTopTopics = set()
+    uniqueTopTopics.update(topTopics)
+    sumVar = 0
+    for topic in uniqueTopTopics:
+        pTopic = topTopics.count(topic)/float(len(topTopics))
+        sumVar += pTopic*np.log(pTopic)
+    if len(topTopics) > 1: # handles edge case of having just 1 source and 1 top topic
+        correction = len(topTopics)/(len(topTopics)-1) # N/(N-1)
+    else:
+        correction = 1
+    return -1*sumVar*correction
+
 def get_unique_top_topic_weights(sourceList,docTopicWeights,threshold):
     """Grabs unique top topics from a list of sources (defined by a threshold paramter)
     and returns those topics in a hash with the total weight of each topic over the
@@ -249,48 +266,50 @@ if __name__ == '__main__':
                     conceptSources_insp = [s for s in conceptSources_both if "_I-" in s] # grab inspiration sources
                     
                     # both
-                    both_TopTopics, both_WeightSum = get_unique_top_topic_weights(conceptSources_both,weights,weightThreshold) #get its top topics
-                    conceptDict['both_sourceVariety'] = weighted_entropy(both_TopTopics,both_WeightSum)
-                    conceptDict['both_topTopics'] = '_'.join(["%i$%.3f" %(key, value) for key, value in both_TopTopics.items()]) #list of top topics
-                    #conceptDict['both_numTopTopics'] = len(both_TopTopics)
+                    #both_TopTopics, both_WeightSum = get_unique_top_topic_weights(conceptSources_both,weights,weightThreshold) #get its top topics
+                    #conceptDict['both_sourceVariety'] = weighted_entropy(both_TopTopics,both_WeightSum)
+                    both_TopTopics, both_WeightSum = get_top_topics(conceptSources_both,weights,weightThreshold) #get its top topics
+                    conceptDict['both_sourceVariety'] = corrected_discrete_entropy(both_TopTopics)
+                    #conceptDict['both_topTopics'] = '_'.join(["%i$%.3f" %(key, value) for key, value in both_TopTopics.items()]) #list of top topics
+                    conceptDict['both_numTopTopics'] = len(both_TopTopics)
                     conceptDict['both_numUniqueTopTopics'] = count_unique_items(both_TopTopics)
                     conceptDict['both_weightSum'] = both_WeightSum
                     conceptDict['both_numSources'] = len(conceptSources_both)
                     
-                    # concepts
-                    conceptDict['conc_numSources'] = len(conceptSources_conc)
-                    if len(conceptSources_conc) > 0:
-                        conc_TopTopics, conc_WeightSum = get_unique_top_topic_weights(conceptSources_conc,weights,weightThreshold) #get its top topics
-                        conceptDict['conc_sourceVariety'] = weighted_entropy(conc_TopTopics, conc_WeightSum)
-                        conceptDict['conc_topTopics'] = '_'.join(["%i$%.3f" %(key, value) for key, value in conc_TopTopics.items()]) #list of top topics
-                        #conceptDict['conc_numTopTopics'] = len(conc_TopTopics)
-                        conceptDict['conc_numUniqueTopTopics'] = len(conc_TopTopics)
-                        conceptDict['conc_weightSum'] = conc_WeightSum
-                    else:
-                        conceptDict['conc_sourceVariety'] = np.nan
-                        conceptDict['conc_topTopics'] = np.nan
-                        #conceptDict['conc_numTopTopics'] = np.nan
-                        conceptDict['conc_numUniqueTopTopics'] = np.nan
-                        conceptDict['conc_weightSum'] = np.nan
-                    
-                    # inspirations
-                    conceptDict['insp_numSources'] = len(conceptSources_insp)
-                    if len(conceptSources_insp) > 0:
-                        insp_TopTopics, insp_WeightSum = get_unique_top_topic_weights(conceptSources_insp,weights,weightThreshold) #get its top topics
-                        conceptDict['insp_sourceVariety'] = weighted_entropy(insp_TopTopics,insp_WeightSum)
-                        conceptDict['insp_topTopics'] = '_'.join(["%i$%.3f" %(key, value) for key, value in insp_TopTopics.items()]) #list of top topics
-                        #conceptDict['insp_numTopTopics'] = len(insp_TopTopics)
-                        conceptDict['insp_numUniqueTopTopics'] = len(insp_TopTopics)
-                        conceptDict['insp_weightSum'] = insp_WeightSum
-                    else:
-                        conceptDict['insp_sourceVariety'] = np.nan
-                        conceptDict['insp_topTopics'] = np.nan
-                        #conceptDict['insp_numTopTopics'] = np.nan
-                        conceptDict['insp_numUniqueTopTopics'] = np.nan
-                        conceptDict['insp_weightSum'] = np.nan
+                    ## concepts
+                    #conceptDict['conc_numSources'] = len(conceptSources_conc)
+                    #if len(conceptSources_conc) > 0:
+                    #    conc_TopTopics, conc_WeightSum = get_unique_top_topic_weights(conceptSources_conc,weights,weightThreshold) #get its top topics
+                    #    conceptDict['conc_sourceVariety'] = weighted_entropy(conc_TopTopics, conc_WeightSum)
+                    #    conceptDict['conc_topTopics'] = '_'.join(["%i$%.3f" %(key, value) for key, value in conc_TopTopics.items()]) #list of top topics
+                    #    #conceptDict['conc_numTopTopics'] = len(conc_TopTopics)
+                    #    conceptDict['conc_numUniqueTopTopics'] = len(conc_TopTopics)
+                    #    conceptDict['conc_weightSum'] = conc_WeightSum
+                    #else:
+                    #    conceptDict['conc_sourceVariety'] = np.nan
+                    #    conceptDict['conc_topTopics'] = np.nan
+                    #    #conceptDict['conc_numTopTopics'] = np.nan
+                    #    conceptDict['conc_numUniqueTopTopics'] = np.nan
+                    #    conceptDict['conc_weightSum'] = np.nan
+                    #
+                    ## inspirations
+                    #conceptDict['insp_numSources'] = len(conceptSources_insp)
+                    #if len(conceptSources_insp) > 0:
+                    #    insp_TopTopics, insp_WeightSum = get_unique_top_topic_weights(conceptSources_insp,weights,weightThreshold) #get its top topics
+                    #    conceptDict['insp_sourceVariety'] = weighted_entropy(insp_TopTopics,insp_WeightSum)
+                    #    conceptDict['insp_topTopics'] = '_'.join(["%i$%.3f" %(key, value) for key, value in insp_TopTopics.items()]) #list of top topics
+                    #    #conceptDict['insp_numTopTopics'] = len(insp_TopTopics)
+                    #    conceptDict['insp_numUniqueTopTopics'] = len(insp_TopTopics)
+                    #    conceptDict['insp_weightSum'] = insp_WeightSum
+                    #else:
+                    #    conceptDict['insp_sourceVariety'] = np.nan
+                    #    conceptDict['insp_topTopics'] = np.nan
+                    #    #conceptDict['insp_numTopTopics'] = np.nan
+                    #    conceptDict['insp_numUniqueTopTopics'] = np.nan
+                    #    conceptDict['insp_weightSum'] = np.nan
                     conceptdata.append(conceptDict)
                 variety_df = pd.DataFrame(conceptdata)
-                outFileName = "%s/ConceptLevel_AfterDistanceAndControlsAndDiversityAndWeightedVariety_K%s-%s_T%d.csv" %(outputDir,k,run,int(weightThreshold*100))
+                outFileName = "%s/ConceptLevel_AfterDistanceAndControlsAndDiversityAndCorrectedDiscreteVariety_K%s-%s_T%d.csv" %(outputDir,k,run,int(weightThreshold*100))
                 data = pd.read_csv(DATA_FILENAME) #open the data file
                 masterDF = pd.merge(data,variety_df,how='left',on='nodeID') #merge into the master datafile
                 #print masterDF.head()
