@@ -276,37 +276,41 @@ if __name__ == '__main__':
                     conceptDict['both_weightSum'] = both_WeightSum
                     conceptDict['both_numSources'] = len(conceptSources_both)
                     
-                    ## concepts
-                    #conceptDict['conc_numSources'] = len(conceptSources_conc)
-                    #if len(conceptSources_conc) > 0:
-                    #    conc_TopTopics, conc_WeightSum = get_unique_top_topic_weights(conceptSources_conc,weights,weightThreshold) #get its top topics
-                    #    conceptDict['conc_sourceVariety'] = weighted_entropy(conc_TopTopics, conc_WeightSum)
-                    #    conceptDict['conc_topTopics'] = '_'.join(["%i$%.3f" %(key, value) for key, value in conc_TopTopics.items()]) #list of top topics
-                    #    #conceptDict['conc_numTopTopics'] = len(conc_TopTopics)
-                    #    conceptDict['conc_numUniqueTopTopics'] = len(conc_TopTopics)
-                    #    conceptDict['conc_weightSum'] = conc_WeightSum
-                    #else:
-                    #    conceptDict['conc_sourceVariety'] = np.nan
-                    #    conceptDict['conc_topTopics'] = np.nan
-                    #    #conceptDict['conc_numTopTopics'] = np.nan
-                    #    conceptDict['conc_numUniqueTopTopics'] = np.nan
-                    #    conceptDict['conc_weightSum'] = np.nan
-                    #
-                    ## inspirations
-                    #conceptDict['insp_numSources'] = len(conceptSources_insp)
-                    #if len(conceptSources_insp) > 0:
-                    #    insp_TopTopics, insp_WeightSum = get_unique_top_topic_weights(conceptSources_insp,weights,weightThreshold) #get its top topics
-                    #    conceptDict['insp_sourceVariety'] = weighted_entropy(insp_TopTopics,insp_WeightSum)
-                    #    conceptDict['insp_topTopics'] = '_'.join(["%i$%.3f" %(key, value) for key, value in insp_TopTopics.items()]) #list of top topics
-                    #    #conceptDict['insp_numTopTopics'] = len(insp_TopTopics)
-                    #    conceptDict['insp_numUniqueTopTopics'] = len(insp_TopTopics)
-                    #    conceptDict['insp_weightSum'] = insp_WeightSum
-                    #else:
-                    #    conceptDict['insp_sourceVariety'] = np.nan
-                    #    conceptDict['insp_topTopics'] = np.nan
-                    #    #conceptDict['insp_numTopTopics'] = np.nan
-                    #    conceptDict['insp_numUniqueTopTopics'] = np.nan
-                    #    conceptDict['insp_weightSum'] = np.nan
+                    # concepts
+                    conceptDict['conc_numSources'] = len(conceptSources_conc)
+                    if len(conceptSources_conc) > 0:
+                        #conc_TopTopics, conc_WeightSum = get_unique_top_topic_weights(conceptSources_conc,weights,weightThreshold) #get its top topics
+                        #conceptDict['conc_sourceVariety'] = weighted_entropy(conc_TopTopics, conc_WeightSum)
+                        #conceptDict['conc_topTopics'] = '_'.join(["%i$%.3f" %(key, value) for key, value in conc_TopTopics.items()]) #list of top topics
+                        conc_TopTopics, conc_WeightSum = get_top_topics(conceptSources_conc,weights,weightThreshold) #get its top topics
+                        conceptDict['conc_sourceVariety'] = corrected_discrete_entropy(conc_TopTopics)
+                        conceptDict['conc_numTopTopics'] = len(conc_TopTopics)
+                        conceptDict['conc_numUniqueTopTopics'] = count_unique_items(conc_TopTopics)
+                        conceptDict['conc_weightSum'] = conc_WeightSum
+                    else:
+                        conceptDict['conc_sourceVariety'] = np.nan
+                        #conceptDict['conc_topTopics'] = np.nan
+                        conceptDict['conc_numTopTopics'] = np.nan
+                        conceptDict['conc_numUniqueTopTopics'] = np.nan
+                        conceptDict['conc_weightSum'] = np.nan
+                    
+                    # inspirations
+                    conceptDict['insp_numSources'] = len(conceptSources_insp)
+                    if len(conceptSources_insp) > 0:
+                        #insp_TopTopics, insp_WeightSum = get_unique_top_topic_weights(conceptSources_insp,weights,weightThreshold) #get its top topics
+                        #conceptDict['insp_sourceVariety'] = weighted_entropy(insp_TopTopics,insp_WeightSum)
+                        #conceptDict['insp_topTopics'] = '_'.join(["%i$%.3f" %(key, value) for key, value in insp_TopTopics.items()]) #list of top topics
+                        insp_TopTopics, insp_WeightSum = get_top_topics(conceptSources_insp,weights,weightThreshold) #get its top topics
+                        conceptDict['insp_sourceVariety'] = corrected_discrete_entropy(insp_TopTopics)
+                        conceptDict['insp_numTopTopics'] = len(insp_TopTopics)
+                        conceptDict['insp_numUniqueTopTopics'] = count_unique_items(insp_TopTopics)
+                        conceptDict['insp_weightSum'] = insp_WeightSum
+                    else:
+                        conceptDict['insp_sourceVariety'] = np.nan
+                        #conceptDict['insp_topTopics'] = np.nan
+                        conceptDict['insp_numTopTopics'] = np.nan
+                        conceptDict['insp_numUniqueTopTopics'] = np.nan
+                        conceptDict['insp_weightSum'] = np.nan
                     conceptdata.append(conceptDict)
                 variety_df = pd.DataFrame(conceptdata)
                 outFileName = "%s/ConceptLevel_AfterDistanceAndControlsAndDiversityAndCorrectedDiscreteVariety_K%s-%s_T%d.csv" %(outputDir,k,run,int(weightThreshold*100))
