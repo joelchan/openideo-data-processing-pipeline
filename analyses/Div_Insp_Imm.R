@@ -28,6 +28,7 @@ pairs(~shortlist+comments_preshortlist+num_shortlisted_sources+insp_dist_z_insp_
 # fully unconditional cross-classified
 fit.div.insp.null = glmer(shortlist ~ (1|authorURL) + (1|challenge), data=data.div.insp, family=binomial)
 summary(fit.div.insp.null)
+confint.merMod(fit.div.insp.null,method='Wald')
 
 # test sig. of variance components
 # challenge
@@ -55,6 +56,8 @@ anova(fit.div.insp.controls,fit.div.insp.divmean,test='LRT') # add anything over
 data.div.insp$insp_div_mean_rescaled_sq <- data.div.insp$insp_div_mean^2
 fit.div.insp.divmean.quadr = glmer(shortlist ~ (1|authorURL) + (1|challenge) + insp_div_mean_rescaled + insp_div_mean_rescaled_sq + num_shortlisted_sources + comments_preshortlist, data=data.div.insp, family=binomial)
 summary(fit.div.insp.divmean.quadr)
+confint.merMod(fit.div.insp.divmean.quadr,method='Wald')
+anova(fit.div.insp.divmean,fit.div.insp.divmean.quadr,test='LRT')
 
 # any problem variation?
 fit.div.insp.divmean.RE = glmer(shortlist ~ (1|authorURL) + (insp_div_mean_rescaled|challenge) + insp_div_mean_rescaled + num_shortlisted_sources + comments_preshortlist, data=data.div.insp, family=binomial)

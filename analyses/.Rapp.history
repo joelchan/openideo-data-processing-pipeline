@@ -1,0 +1,101 @@
+# fully unconditional cross-classified#
+fit.div.insp.null = glmer(shortlist ~ (1|authorURL) + (1|challenge), data=data.div.insp, family=binomial)#
+summary(fit.div.insp.null)
+library(lme4)
+# fully unconditional cross-classified#
+fit.div.insp.null = glmer(shortlist ~ (1|authorURL) + (1|challenge), data=data.div.insp, family=binomial)#
+summary(fit.div.insp.null)
+# test sig. of variance components#
+# challenge#
+fit.div.insp.auth = glmer(shortlist ~ (1|authorURL), data=data.div.insp, family=binomial)#
+anova(fit.div.insp.auth,fit.div.insp.null,test='LRT') # yes, chisq(1) = 5.19, p = .01#
+# author#
+fit.div.insp.chall = glmer(shortlist ~ (1|challenge), data=data.div.insp, family=binomial)#
+anova(fit.div.insp.chall,fit.div.insp.null,test='LRT') # yes, chisq(1) = 4.41, p = .02
+fit.div.insp.controls = glmer(shortlist ~ (1|authorURL) + (1|challenge) + num_shortlisted_sources + comments_preshortlist, data=data.div.insp, family=binomial)#
+summary(fit.div.insp.controls)#
+confint.merMod(fit.div.insp.controls,method='Wald')#
+anova(fit.div.insp.null,fit.div.insp.controls,test='LRT')
+0.25*10 - 0.15*10
+data.div.insp$insp_div_mean_rescaled <- data.div.insp$insp_div_mean*10
+fit.div.insp.divmean = glmer(shortlist ~ (1|authorURL) + (1|challenge) + insp_div_mean_rescaled + num_shortlisted_sources + comments_preshortlist, data=data.div.insp, family=binomial)#
+summary(fit.div.insp.divmean)#
+confint.merMod(fit.div.insp.divmean,method='Wald')
+remove(fit.insp.divmean)
+fit.fixed
+remove(fit.fixed)
+remove(fit.random)
+anova(fit.div.insp.controls,fit.div.insp.divmean,test='LRT') # add anything over control?
+2/sqrt(456)
+influence.div.insp.divmean
+library(influence.ME)
+dfbetas.divmean <- dfbetas.estex(influence.div.insp.divmean,parameters='insp_div_mean')
+library(ggplot2)
+boxplot(dfbetas.divmean)
+boxplot(dfbetas.divmean,ylab="DFBETAS for mean diversity")
+length(dfbetas.divmean[dfbetas.divmean < -.09])
+length(dfbetas.divmean[dfbetas.divmean > .09])
+mean(dfbetas.divmean)
+stderr(dfbetas.divmean)
+sd(dfbetas.divmean)/length(dfbetas.divmean)
+library(ggplot2)
+fit.div.insp.divmean.quadr = glmer(shortlist ~ (1|authorURL) + (1|challenge) + insp_div_mean_rescaled + insp_div_mean_rescaled^2 + num_shortlisted_sources + comments_preshortlist, data=data.div.insp, family=binomial)
+summary(fit.div.insp.divmean.quadr)
+data.div.insp$insp_div_mean_rescaled_sq <- data.div.insp$insp_div_mean^2
+fit.div.insp.divmean.quadr = glmer(shortlist ~ (1|authorURL) + (1|challenge) + insp_div_mean_rescaled + insp_div_mean_rescaled_sq + num_shortlisted_sources + comments_preshortlist, data=data.div.insp, family=binomial)
+summary(fit.div.insp.divmean.quadr)
+# base#
+fit.div.insp.distmean = glmer(shortlist ~ (1|authorURL) + (1|challenge) + insp_dist_z_insp_mean + num_shortlisted_sources + comments_preshortlist, data=data.div.insp, family=binomial)#
+summary(fit.div.insp.distmean) # effect is in the same direction, of similar size, but with more noise (now "marginal")
+confint.merMod(fit.div.insp.distmean,method='Wald') # 95% CI = [-0.91,0.07]
+fit.div.insp.distmean.divmean = glmer(shortlist ~ (1|authorURL) + (1|challenge) + insp_dist_z_insp_mean_rescaled + insp_div_mean + num_shortlisted_sources + comments_preshortlist, data=data.div.insp, family=binomial)#
+summary(fit.div.insp.distmean.divmean)#
+confint.merMod(fit.div.insp.distmean.divmean,method='Wald')
+fit.div.insp.distmean.divmean = glmer(shortlist ~ (1|authorURL) + (1|challenge) + insp_dist_z_insp_mean + insp_div_mean_rescaled + num_shortlisted_sources + comments_preshortlist, data=data.div.insp, family=binomial)#
+summary(fit.div.insp.distmean.divmean)#
+confint.merMod(fit.div.insp.distmean.divmean,method='Wald')
+remove(fit.div.insp.distmean.divmean.inter)
+data.div.insp$insp_distmeanXdivmean = data.div.insp$insp_dist_z_insp_mean * data.div.insp$insp_div_mean
+cor.test(data.div.insp$insp_dist_z_insp_mean, data.div.insp$insp_div_mean)
+fit.div.insp.distmean.divmean.inter = glmer(shortlist ~ (1|authorURL) + (1|challenge) + insp_dist_z_insp_mean + insp_div_mean_rescaled + insp_distmeanXdivmean + num_shortlisted_sources + comments_preshortlist, data=data.div.insp, family=binomial)#
+summary(fit.div.insp.distmean.divmean.inter)#
+confint.merMod(fit.div.insp.distmean.divmean.inter,method='Wald')
+anova(fit.div.insp.controls,fit.div.insp.distmean,fit.div.insp.distmean.divmean, fit.div.insp.distmean.divmean.inter,test='LRT')
+data.div.insp$insp_div_min_rescaled <- data.div.insp$insp_div_min*10 #rescale for easier interpretation of coefficient#
+fit.div.insp.divmin = glmer(shortlist ~ (1|authorURL) + (1|challenge) + insp_div_min_rescaled + num_shortlisted_sources + comments_preshortlist, data=data.div.insp, family=binomial)#
+summary(fit.div.insp.divmin)
+data.div.insp$insp_div_max_rescaled <- data.div.insp$insp_div_max*10 #rescale for easier interpretation of coefficient#
+fit.div.insp.divmax = glmer(shortlist ~ (1|authorURL) + (1|challenge) + insp_div_max_rescaled + num_shortlisted_sources + comments_preshortlist, data=data.div.insp, family=binomial)#
+summary(fit.div.insp.divmax)
+data.div$both_div_mean_rescaled <- data.div.insp$both_div_mean*10 #rescale for easier interpretation of coefficient
+data.div$both_div_mean_rescaled <- data.div$both_div_mean*10 #rescale for easier interpretation of coefficient
+hist(data.div$both_div_mean_rescaled)
+data.div.insp$insp_div_max_rescaled <- data.div.insp$insp_div_max*10 #rescale for easier interpretation of coefficient#
+summary(glmer(shortlist ~ (1|authorURL) + (1|challenge) + both_div_mean_rescaled + num_shortlisted_sources + comments_preshortlist, data=data.div, family=binomial))
+# any problem variation?#
+fit.div.insp.divmean.RE = glmer(shortlist ~ (1|authorURL) + (insp_div_mean|challenge) + insp_div_mean_rescaled + num_shortlisted_sources + comments_preshortlist, data=data.div.insp, family=binomial)#
+summary(fit.div.insp.divmean.RE)#
+confint.merMod(fit.div.insp.divmean.RE,method='Wald')#
+anova(fit.div.insp.divmean,fit.div.insp.divmean.RE,test='LRT')
+coef(fit.div.insp.divmean.RE)[2]
+# any problem variation?#
+fit.div.insp.divmean.RE = glmer(shortlist ~ (1|authorURL) + (insp_div_mean_rescaled|challenge) + insp_div_mean_rescaled + num_shortlisted_sources + comments_preshortlist, data=data.div.insp, family=binomial)#
+summary(fit.div.insp.divmean.RE)#
+confint.merMod(fit.div.insp.divmean.RE,method='Wald')#
+anova(fit.div.insp.divmean,fit.div.insp.divmean.RE,test='LRT')
+coef(fit.div.insp.divmean.RE)[2]
+coef(fit.div.insp.divmean.RE)[2,2]
+coef(fit.div.insp.divmean.RE)[2][2]
+coef(fit.div.insp.divmean.RE)[2][2]$
+asdf
+# min RE#
+fit.div.insp.divmin.RE = glmer(shortlist ~ (1|authorURL) + (insp_div_min_rescaled|challenge) + insp_div_min_rescaled + num_shortlisted_sources + comments_preshortlist, data=data.div.insp, family=binomial)#
+summary(fit.div.insp.divmin.RE)
+## max#
+data.div.insp$insp_div_max_rescaled <- data.div.insp$insp_div_max*10 #rescale for easier interpretation of coefficient#
+fit.div.insp.divmax = glmer(shortlist ~ (1|authorURL) + (1|challenge) + insp_div_max_rescaled + num_shortlisted_sources + comments_preshortlist, data=data.div.insp, family=binomial)#
+summary(fit.div.insp.divmax)#
+#
+# max RE#
+fit.div.insp.divmax.RE = glmer(shortlist ~ (1|authorURL) + (insp_div_max_rescaled|challenge) + insp_div_max_rescaled + num_shortlisted_sources + comments_preshortlist, data=data.div.insp, family=binomial)#
+summary(fit.div.insp.divmax.RE)
