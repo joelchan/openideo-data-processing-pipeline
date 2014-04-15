@@ -43,13 +43,14 @@ def count_unique_items(a):
 
 datafilename = "/Users/joelc/Dropbox/Research/dissertation/OpenIDEO/Pipeline/Challenge_and_High-level_Data/iPython intermediate inputs and outputs/ConceptLevel_AfterDistanceAndControlsAndDiversity.csv"
 pathfilename = "/Users/joelc/Dropbox/Research/Dissertation/OpenIDEO/Pipeline/Paths/_CSVversions/paths_all.csv"
-weightsfilename = "/Users/joelc/Dropbox/Research/Dissertation/OpenIDEO/Pipeline/Validation/FINAL_malletLDA/sorted_CF0_DF0_400_ASP_optim_composition-6.csv"
+#weightsfilename = "/Users/joelc/Dropbox/Research/Dissertation/OpenIDEO/Pipeline/Validation/FINAL_malletLDA/sorted_CF0_DF0_400_ASP_optim_composition-6.csv"
 levelRange = sys.argv[1] #this command-line parameter determines range of levels to consider in the genealogy (1 = immediate)
 fromLevel = int(levelRange.split('-')[0])
 toLevel = int(levelRange.split('-')[1])
 levels = [i for i in xrange(fromLevel,toLevel+1)] #create list of levels, inclusive of the upper limit (toLevel)
 
 weightsThreshold = float(sys.argv[2])
+weightsfilename = sys.argv[3]
 
 # read in the doc-topic weights
 print "Reading in weights..."
@@ -92,7 +93,7 @@ for concept in concepts:
     # both
     both_conceptTopTopics, both_conceptWeightSum = get_top_topics(conceptSources_both,doc_topic_weights,weightsThreshold) #get its top topics
     conceptDict['both_sourceVariety'] = compute_variety(both_conceptTopTopics)
-    conceptDict['both_topTopics'] = '-'.join([str(t) for t in both_conceptTopTopics]) #list of top topics
+    conceptDict['both_topTopics'] = '_'.join([str(t) for t in both_conceptTopTopics]) #list of top topics
     conceptDict['both_numTopTopics'] = len(both_conceptTopTopics)
     conceptDict['both_weightSum'] = both_conceptWeightSum
     conceptDict['both_numSources'] = count_unique_items(conceptSources_both)
@@ -102,7 +103,7 @@ for concept in concepts:
     if len(conceptSources_conc) > 0:
         conc_conceptTopTopics, conc_conceptWeightSum = get_top_topics(conceptSources_conc,doc_topic_weights,weightsThreshold) #get its top topics
         conceptDict['conc_sourceVariety'] = compute_variety(conc_conceptTopTopics)
-        conceptDict['conc_topTopics'] = '-'.join([str(t) for t in conc_conceptTopTopics]) #list of top topics
+        conceptDict['conc_topTopics'] = '_'.join([str(t) for t in conc_conceptTopTopics]) #list of top topics
         conceptDict['conc_numTopTopics'] = count_unique_items(conc_conceptTopTopics)
         conceptDict['conc_weightSum'] = conc_conceptWeightSum
     else:
@@ -116,7 +117,7 @@ for concept in concepts:
     if len(conceptSources_insp) > 0:
         insp_conceptTopTopics, insp_conceptWeightSum = get_top_topics(conceptSources_insp,doc_topic_weights,weightsThreshold) #get its top topics
         conceptDict['insp_sourceVariety'] = compute_variety(insp_conceptTopTopics)
-        conceptDict['insp_topTopics'] = '-'.join([str(t) for t in insp_conceptTopTopics]) #list of top topics
+        conceptDict['insp_topTopics'] = '_'.join([str(t) for t in insp_conceptTopTopics]) #list of top topics
         conceptDict['insp_numTopTopics'] = count_unique_items(insp_conceptTopTopics)
         conceptDict['insp_weightSum'] = insp_conceptWeightSum
     else:
