@@ -1,0 +1,92 @@
+OpenIDEO Variety Analysis (K=400[6],t=60)
+========================================================
+
+Load data and packages
+```{r loadStuff, echo=FALSE}
+path = "/Users/joelc/Dropbox/Research/dissertation/OpenIDEO/Pipeline/Validation/FINAL_malletLDA/ConceptLevel_AfterDistanceAndControlsAndDiversityAndCorrectedDiscreteVariety_K400-6_T60.csv"
+data.var.k400t60 = read.csv(path)
+data.var.k400t60 <- subset(data.var.k400t60, both_numSources > 0)
+library(lme4)
+library(psych)
+```
+
+# Descriptives first
+## Descriptive statistics
+```{r descriptives}
+describe(data.var.k400t60[c('shortlist','comments_preshortlist','num_shortlisted_sources','both_numSources','both_sourceVariety')])
+```
+
+## Intercorrelations
+```{r correlations}
+library(Hmisc) # watch out, there is a conflicting named function "describe" - we want the one from psych
+rcorr(as.matrix(data.var.k400t60[c('shortlist','comments_preshortlist','num_shortlisted_sources','both_numSources','both_sourceVariety')]))
+```
+
+# Models
+# Null and control
+
+Null
+```{r modelNull}
+fit.var.k400.t60.both.null = glmer(shortlist ~ (1|authorURL) + (1|challenge_x), data=data.var.k400t60, family=binomial)
+summary(fit.var.k400.t60.both.null)
+```
+
+Test sig. of the random effects
+```{r modelNullsigRandomEffects}
+fit.var.k400.t60.both.null.authorsOnly = glmer(shortlist ~ (1|authorURL), data=data.var.k400t60, family=binomial)
+fit.var.k400.t60.both.null.challOnly = glmer(shortlist ~ (1|challenge_x), data=data.var.k400t60, family=binomial)
+anova(fit.var.k400.t60.both.null.authorsOnly,fit.var.k400.t60.both.null,test='LRT') # is the challenge random-effect sig?
+anova(fit.var.k400.t60.both.null.challOnly,fit.var.k400.t60.both.null,test='LRT') # is the author random-effect sig?
+```
+
+Control
+```{r modelControl}
+fit.var.k400.t60.both.controls = glmer(shortlist ~ (1|authorURL) + (1|challenge_x) + comments_preshortlist + num_shortlisted_sources + both_numSources, data=data.var.k400t60, family=binomial)
+summary(fit.var.k400.t60.both.controls)
+```
+
+LRT to compare against
+```{r LRTControlvsNull}
+anova(fit.var.k400.t60.both.null,fit.var.k400.t60.both.controls,test='LRT')
+```
+
+Confidence intervals
+```{r CIControl}
+confint.merMod(fit.var.k400.t60.both.controls,method='Wald')
+```
+
+# For real
+
+Now our first model with just variety
+```{r modelVarLinear}
+fit.var.k400.t60.both.varLinear = glmer(shortlist ~ (1|authorURL) + (1|challenge_x) + comments_preshortlist + num_shortlisted_sources + both_numSources + both_sourceVariety, data=data.var.k400t60, family=binomial)
+summary(fit.var.k400.t60.both.varLinear)
+```
+
+Confidence intervals
+```{r CIVarLinear}
+confint.merMod(fit.var.k400.t60.both.varLinear,method='Wald')
+```
+
+No real effect of variety, also confirmed by LRT that adding it to the model doesn't really improve our fit to the data
+```{r LRTVarLinearVSControl}
+anova(fit.var.k400.t60.both.controls,fit.var.k400.t60.both.varLinear,test='LRT')
+```
+
+Let's add a quadratic term now
+```{r modelVarQuadr}
+data.var.k400t60$both_sourceVariety.sq = data.var.k400t60$both_sourceVariety^2
+fit.var.k400.t60.both.varQuadr = glmer(shortlist ~ (1|authorURL) + (1|challenge_x) + comments_preshortlist + num_shortlisted_sources + both_numSources + both_sourceVariety + both_sourceVariety.sq, data=data.var.k400t60, family=binomial)
+summary(fit.var.k400.t60.both.varQuadr)
+```
+
+Notice the very wide confidence intervals
+```{r CIVarQuadr}
+confint.merMod(fit.var.k400.t60.both.varQuadr,method='Wald')
+```
+
+So there's a hint of a positive linear effect of variety with a deceleration function (basically an inverted-U effect).
+BUT, it is marginal, and the model with these terms doesn't really fit better than control (the LRT is n.s., and the AIC is *slightly* larger)
+```{r LRTVarQuadrVSControl}
+anova(fit.var.k400.t60.both.controls,fit.var.k400.t60.both.varQuadr,test='LRT')
+```

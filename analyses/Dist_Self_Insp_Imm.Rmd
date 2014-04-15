@@ -1,0 +1,297 @@
+OpenIDEO: Distance of Immediate Inspirations from Self --> Shortlist
+========================================================
+
+## Preliminaries
+```{r preliminaries}
+#data
+path = "/Users/joelc/Dropbox/Research/dissertation/OpenIDEO/Pipeline/openideo-data-processing-pipeline/data-collection/ConceptLevel_AfterDistanceAndControlsAndSelfDistance_Level1-1.csv"
+data.dist.self = read.csv(path)
+data.dist.self = subset(data.dist.self,data.dist.self$insp_dist_count > 0) # subset it
+
+#libraries
+library(lme4)
+library(ggplot2)
+library(psych)
+library(dplyr)
+```
+
+## Descriptives
+```{r fig.width=6, fig.height=4}
+ggplot(data.dist.self, aes(insp_distSelf_mean)) + 
+  geom_histogram(fill=NA,color="black") + 
+  labs(x="Mean distance from self",y="Frequency") +
+  theme_bw()
+```
+
+```{r fig.width=6, fig.height=4}
+ggplot(data.dist.self, aes(insp_distSelf_max)) + 
+  geom_histogram(fill=NA,color="black") + 
+  labs(x="Max distance from self",y="Frequency") +
+  theme_bw()
+```
+
+stats
+```{r descriptive statistics}
+describe(data.dist.self[c('shortlist','comments_preshortlist','num_shortlisted_sources','insp_dist_z_insp_mean','insp_dist_z_insp_max','insp_distSelf_mean','insp_distSelf_max')])
+```
+
+intercorrelations
+```{r intercorrelations}
+library(Hmisc) # note: 'describe' from the psych package won't work past this point
+rcorr(as.matrix(data.dist.self[c('shortlist','comments_preshortlist','num_shortlisted_sources','insp_dist_z_insp_mean','insp_dist_z_insp_max','insp_distSelf_mean','insp_distSelf_max')]))
+```
+
+plot binnned Pr(shortlist) vs mean self-distance to guide model-building
+```{r fig.width=6, fig.height=4}
+
+# make the cuts
+data.dist.self$bin_distSelfMean_4 <- cut2(data.dist.self$insp_distSelf_mean, g=4)
+
+# summarize the data for the bins
+summarized_mean <- data.dist.self %.% 
+  group_by(bin_distSelfMean_4) %.% 
+  summarise(propShortlist = mean(shortlist), 
+            meanVal = mean(insp_distSelf_mean),
+            sdVal = sd(insp_distSelf_mean),
+            n = length(shortlist)) %.%
+  mutate(error_propShortlist = sqrt(propShortlist*(1-propShortlist)/n),
+       error_meanVal=sdVal/sqrt(n))
+
+# plot it!
+ggplot(summarized_mean) + 
+  geom_errorbar(mapping=aes(x=meanVal, ymin=propShortlist-1.95* error_propShortlist, ymax=propShortlist+1.95* error_propShortlist),width=0.0) + 
+  geom_errorbarh(aes(x=meanVal,y=propShortlist,xmin=meanVal-1.95*error_meanVal, xmax=meanVal+1.95* error_meanVal),height=0.0) + 
+  geom_point(mapping=aes(x=meanVal,y=propShortlist), size=3, shape=21, fill="white") + 
+  labs(x="Mean source distance from self",y="Pr(shortlist)") + 
+  scale_x_continuous(breaks=seq(-0.5,0,.1),limits=c(-0.5,0)) + 
+  scale_y_continuous(breaks=seq(0,.3,.1),limits=c(0,.3)) + 
+  theme_bw()
+```
+
+plot binnned Pr(shortlist) vs max self-distance to guide model-building
+```{r fig.width=6, fig.height=4}
+# make the cuts
+data.dist.self$bin_distSelfMax_4 <- cut2(data.dist.self$insp_distSelf_max, g=4)
+
+# summarize the data for the bins
+summarized_max <- data.dist.self %.% 
+  group_by(bin_distSelfMax_4) %.% 
+  summarise(propShortlist = mean(shortlist), 
+            meanVal = mean(insp_distSelf_max),
+            sdVal = sd(insp_distSelf_max),
+            n = length(shortlist)) %.%
+  mutate(error_propShortlist = sqrt(propShortlist*(1-propShortlist)/n),
+       error_meanVal=sdVal/sqrt(n))
+
+# plot it!
+ggplot(summarized_max) + 
+  geom_errorbar(mapping=aes(x=meanVal, ymin=propShortlist-1.95* error_propShortlist, ymax=propShortlist+1.95* error_propShortlist),width=0.0) + 
+  geom_errorbarh(aes(x=meanVal,y=propShortlist,xmin=meanVal-1.95*error_meanVal, xmax=meanVal+1.95* error_meanVal),height=0.0) + 
+  geom_point(mapping=aes(x=meanVal,y=propShortlist), size=3, shape=21, fill="white") + 
+  labs(x="Max source distance from self",y="Pr(shortlist)") + 
+  scale_x_continuous(breaks=seq(-0.5,0,.1),limits=c(-0.5,0)) + 
+  scale_y_continuous(breaks=seq(0,.3,.1),limits=c(0,.3)) + 
+  theme_bw()
+```
+
+```{r}
+print(summarized_mean)
+print(summarized_max)
+```
+
+So it looks like there's a general downward trend but it's really noisy. Maybe some hint of nonlinearity for max, but I think it's hard to tell. There *might* be a negative slope with acceleration for max distance, but I doubt that will really capture the data well, given the noise. We'll see.
+
+# MODEL TIME!
+
+Let's make new variables to model with
+```{r make new variables}
+data.dist.self = mutate(data.dist.self,
+       num_shortlisted_sources_gmcent = num_shortlisted_sources-mean(num_shortlisted_sources),
+       comments_preshortlist_gmcent = comments_preshortlist-mean(comments_preshortlist),
+       insp_dist_z_insp_mean_gmcent = insp_dist_z_insp_mean-mean(insp_dist_z_insp_mean),
+       insp_distSelf_mean_gmcent = insp_distSelf_mean-mean(insp_distSelf_mean),
+       insp_distSelf_mean_gmcent_sq = insp_distSelf_mean_gmcent^2,
+       insp_distSelf_max_gmcent = insp_distSelf_max-mean(insp_distSelf_max),
+       insp_distSelf_max_gmcent_sq = insp_distSelf_max_gmcent^2
+       )
+```
+
+## Fully unconditional and controls
+
+We don't have to show them here because we know them from the previous analysis. We're just running them here so we can do LRTs.
+NOTE THAT ALL MODELS HENCEFORTH ARE GRAND-MEAN CENTERED!!!
+
+```{r modelNullandControl}
+fit.distSelf.insp.null = glmer(shortlist ~ 
+                                 (1|authorURL) + 
+                                 (1|challenge), 
+                               data=data.dist.self, 
+                               family=binomial)
+fit.distSelf.insp.controls = glmer(shortlist ~ 
+                                     (1|authorURL) + 
+                                     (1|challenge) + 
+                                     num_shortlisted_sources_gmcent + 
+                                     comments_preshortlist_gmcent, 
+                                   data=data.dist.self, 
+                                   family=binomial)
+```
+
+## Mean Distance from Self
+```{r modelDistSelfFE}
+fit.distSelf.insp.distSelf_FE = glmer(shortlist ~ 
+                                   (1|authorURL) + 
+                                   (1|challenge) + 
+                                   num_shortlisted_sources_gmcent + 
+                                   comments_preshortlist_gmcent + 
+                                   insp_distSelf_mean_gmcent, 
+                                 data=data.dist.self, 
+                                 family=binomial)
+summary(fit.distSelf.insp.distSelf_FE)
+confint.merMod(fit.distSelf.insp.distSelf_FE,method='Wald')
+anova(fit.distSelf.insp.controls,fit.distSelf.insp.distSelf_FE,test='LRT') # add anything over control?
+```
+
+Interesting! This sort of makes sense. Mean distance from self is slightly positively correlated with mean distance from the problem (r = .13, *p* < .001). So one way to interpret this is as a residual from the cb-anchored effect. That one seems like where the real action is. If we include cb-distance in the model, I think it all goes away, even though they're not collinear.
+
+```{r modelDistSelfxCB_FE}
+fit.distSelf.insp.distselfCB_FE = glmer(shortlist ~ 
+                                   (1|authorURL) + 
+                                   (1|challenge) + 
+                                   num_shortlisted_sources_gmcent + 
+                                   comments_preshortlist_gmcent +
+                                   insp_distSelf_mean_gmcent +
+                                   insp_dist_z_insp_mean_gmcent, 
+                                 data=data.dist.self, 
+                                 family=binomial)
+summary(fit.distSelf.insp.distselfCB_FE)
+confint.merMod(fit.distSelf.insp.distselfCB_FE,method='Wald')
+```
+
+Ok, it doesn't go away entirely, but it's muted a little (SE doesn't change that much - still very wide CI). It fits better than controls only, but not better than cb-distance only.
+
+```{r LRTvsControlandCB}
+anova(fit.distSelf.insp.controls,fit.distSelf.insp.distselfCB_FE)
+fit.dist.insp.distMean_FE = glmer(shortlist ~ 
+                                   (1|authorURL) + 
+                                   (1|challenge) + 
+                                   num_shortlisted_sources_gmcent + 
+                                   comments_preshortlist_gmcent + 
+                                   insp_dist_z_insp_mean_gmcent, 
+                                 data=data.dist.self, 
+                                 family=binomial)
+anova(fit.dist.insp.distMean_FE,fit.distSelf.insp.distselfCB_FE)
+```
+
+So I think the model with cb-distance is our best estimate of any effects of distance from self: we'll plot that then.
+```{r fig.width=6, fig.height=4}
+xFake = seq(-.5,0,.05)
+yhat = 1/(1+exp(-(fixef(fit.distSelf.insp.distselfCB_FE)[1] + 
+                    fixef(fit.distSelf.insp.distselfCB_FE)[4]*xFake))) 
+fitted = data.frame(xFake,yhat)
+
+ggplot(summarized_mean) + 
+  geom_errorbar(mapping=aes(x=meanVal, ymin=propShortlist-1.95* error_propShortlist, ymax=propShortlist+1.95* error_propShortlist),width=0.0) + 
+  geom_errorbarh(aes(x=meanVal,y=propShortlist,xmin=meanVal-1.95*error_meanVal, xmax=meanVal+1.95* error_meanVal),height=0.0) + 
+  geom_point(mapping=aes(x=meanVal,y=propShortlist), size=3, shape=21, fill="white") + 
+  geom_line(data=fitted,aes(x=xFake,y=yhat)) + #fitted line
+  labs(x="Mean source distance from self",y="Pr(shortlist)") + 
+  scale_x_continuous(breaks=seq(-0.5,0,.1),limits=c(-0.5,0)) + 
+  scale_y_continuous(breaks=seq(0,.3,.1),limits=c(0,.3)) + 
+  theme_bw()
+```
+
+Very quickly, we establish that there isn't (detectable) problem variation
+```{r modelDistSelfREAuthandChall}
+fit.distSelf.insp.distselfCB_RE.chall = glmer(shortlist ~ 
+                                    (1|authorURL) + 
+                                    (insp_distSelf_mean_gmcent|challenge) + 
+                                    num_shortlisted_sources_gmcent + 
+                                    comments_preshortlist_gmcent +
+                                    insp_distSelf_mean_gmcent +
+                                    insp_dist_z_insp_mean_gmcent, 
+                                  data=data.dist.self, 
+                                  family=binomial)
+anova(fit.distSelf.insp.distselfCB_FE,fit.distSelf.insp.distselfCB_RE.chall,test='LRT')
+fit.distSelf.insp.distselfCB_RE.auth = glmer(shortlist ~ 
+                                    (insp_distSelf_mean|authorURL) + 
+                                    (1|challenge) + 
+                                    num_shortlisted_sources_gmcent + 
+                                    comments_preshortlist_gmcent +
+                                    insp_distSelf_mean_gmcent +
+                                    insp_dist_z_insp_mean_gmcent, 
+                                  data=data.dist.self, 
+                                  family=binomial)
+anova(fit.distSelf.insp.distselfCB_FE,fit.distSelf.insp.distselfCB_RE.auth,test='LRT')
+```
+
+
+Also very quickly, test the idea that we might have a negative (and accelerating) slope, which is *very* slightly hinted at in the data, and also makes conceptual sense (if most of my ideas are *very* far from me, I'm cooked)
+```{r modelDistSelfSq}
+fit.distSelf.insp.distselfsqCB_FE = glmer(shortlist ~ 
+                                    (1|authorURL) + 
+                                    (1|challenge) + 
+                                    num_shortlisted_sources_gmcent + 
+                                    comments_preshortlist_gmcent +
+                                    insp_distSelf_mean_gmcent +
+                                    insp_distSelf_mean_gmcent_sq +
+                                    insp_dist_z_insp_mean_gmcent, 
+                                  data=data.dist.self, 
+                                  family=binomial)
+summary(fit.distSelf.insp.distselfsqCB_FE)
+```
+
+## Max Distance from Self
+
+Now let's quickly see what's going on with max distance. I don't expect anything out of this, other than to show that staying really close doesn't seem to hurt you.
+```{r modelDistSelfMax}
+fit.distSelf.insp.distSelfMaxCB_FE = glmer(shortlist ~ 
+                                   (1|authorURL) + 
+                                   (1|challenge) + 
+                                   num_shortlisted_sources_gmcent + 
+                                   comments_preshortlist_gmcent + 
+                                   insp_distSelf_max_gmcent +
+                                   insp_dist_z_insp_mean_gmcent, 
+                                 data=data.dist.self, 
+                                 family=binomial)
+summary(fit.distSelf.insp.distSelfMaxCB_FE)
+confint.merMod(fit.distSelf.insp.distSelfMaxCB_FE,method='Wald')
+anova(fit.dist.insp.distMean_FE,fit.distSelf.insp.distSelfMaxCB_FE)
+```
+
+Similar negative slope estimated with considerable uncertainty. Let's quickly check if a quadratic fits better
+```{r modelDistSelfMaxSq}
+data.dist.self$insp_distSelf_max_sq = data.dist.self$insp_distSelf_max^2
+fit.distSelf.insp.distSelfMaxSqCB_FE = glmer(shortlist ~ 
+                                   (1|authorURL) + 
+                                   (1|challenge) + 
+                                   num_shortlisted_sources_gmcent + 
+                                   comments_preshortlist_gmcent + 
+                                   insp_distSelf_max_gmcent +
+                                   insp_distSelf_max_gmcent_sq +
+                                   insp_dist_z_insp_mean_gmcent, 
+                                 data=data.dist.self, 
+                                 family=binomial)
+summary(fit.distSelf.insp.distSelfMaxSqCB_FE)
+confint.merMod(fit.distSelf.insp.distSelfMaxSqCB_FE,method='Wald')
+anova(fit.dist.insp.distMean_FE,fit.distSelf.insp.distSelfMaxSqCB_FE)
+```
+
+Nope. If we were fully Bayesian we might say we just don't have enough data! Even if we're not fully Bayesian I think that's a reasonable supposition!
+Let's plot it and be done with this then!
+```{r fig.width=6, fig.height=4}
+xFake = seq(-.5,0,.05)
+yhat = 1/(1+exp(-(fixef(fit.distSelf.insp.distSelfMaxCB_FE)[1] + 
+                    fixef(fit.distSelf.insp.distSelfMaxCB_FE)[4]*xFake
+                  )))
+fitted_max = data.frame(xFake,yhat)
+
+ggplot(summarized_max) + 
+  geom_errorbar(mapping=aes(x=meanVal, ymin=propShortlist-1.95* error_propShortlist, ymax=propShortlist+1.95* error_propShortlist),width=0.0) + 
+  geom_errorbarh(aes(x=meanVal,y=propShortlist,xmin=meanVal-1.95*error_meanVal, xmax=meanVal+1.95* error_meanVal),height=0.0) + 
+  geom_point(mapping=aes(x=meanVal,y=propShortlist), size=3, shape=21, fill="white") + 
+  geom_line(data=fitted_max,aes(x=xFake,y=yhat)) + #fitted line
+  labs(x="Max source distance from self",y="Pr(shortlist)") + 
+  scale_x_continuous(breaks=seq(-0.5,0,.1),limits=c(-0.5,0)) + 
+  scale_y_continuous(breaks=seq(0,.3,.1),limits=c(0,.3)) + 
+  theme_bw()
+```

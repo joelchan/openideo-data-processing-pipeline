@@ -1,0 +1,152 @@
+OpenIDEO: Diversity of Immediate Inspirations --> Shortlist
+========================================================
+
+```{r preliminaries}
+library(lme4)
+library(arm)
+library(ggplot2)
+library(psych)
+library(dplyr)
+
+#load the data
+path = "/Users/joelc/Dropbox/Research/dissertation/OpenIDEO/Pipeline/Challenge_and_High-level_Data/iPython intermediate inputs and outputs/ConceptLevel_AfterDistanceAndControlsAndDiversity.csv"
+data = read.csv(path,header=TRUE,sep=',')
+data <- subset(data,insp_dist_count > 1) # drop the single-insp and no-insp cases
+```
+
+# Descriptives
+
+stats
+```{r descriptive statistics}
+describe(data[c('shortlist','comments_preshortlist','num_shortlisted_sources','insp_dist_z_insp_mean','insp_div_mean')])
+```
+
+intercorrelations
+```{r intercorrelations}
+library(Hmisc) # note: 'describe' from the psych package won't work past this point
+rcorr(as.matrix(data[c('shortlist','comments_preshortlist','num_shortlisted_sources','insp_dist_z_insp_mean','insp_div_mean')]))
+```
+
+plot distribution of diversity
+```{r fig.width=7, fig.height=6}
+ggplot(data, aes(insp_div_mean)) + 
+  geom_histogram(fill=NA,color="black") + 
+  theme_bw()
+```
+
+scatterplot matrix
+```{r fig.width=7, fig.height=6}
+pairs(~shortlist+comments_preshortlist+num_shortlisted_sources+insp_dist_z_insp_mean+insp_div_mean,data=data,
+      panel=function(x,y){
+        points(x,y)
+        abline(lm(y~x),lty=2)
+        lines(lowess(x,y))
+        },
+      diag.panel=function(x){
+        par(new=T)
+        hist(x,main="",axes=F)
+        }
+      )
+```
+
+plot binnned Pr(shortlist) vs mean diversity to guide model-building
+```{r fig.width=6, fig.height=4}
+data$bin_divMean_4 <- cut2(data$insp_div_mean, g=4)
+
+# summarize the data for the bins
+summarized <- data %.% 
+  group_by(bin_divMean_4) %.% 
+  summarise(propShortlist=mean(shortlist), 
+            meanVal=mean(insp_div_mean),
+            sdVal=sd(insp_div_mean),
+            n=length(shortlist))
+
+# compute standard errors
+summarized$error_propShortlist <- sqrt(summarized$propShortlist*(1-summarized$propShortlist)/summarized$n)
+summarized$error_meanVal <- summarized$sdVal/sqrt(summarized$n)
+
+ggplot(summarized) + 
+  geom_errorbar(mapping=aes(x=meanVal, ymin=propShortlist-1.95* error_propShortlist, ymax=propShortlist+1.95* error_propShortlist),width=0.0) + 
+  geom_errorbarh(aes(x=meanVal,y=propShortlist,xmin=meanVal-1.95*error_meanVal, xmax=meanVal+1.95* error_meanVal),height=0.0) + 
+  geom_point(mapping=aes(x=meanVal,y=propShortlist), size=3, shape=21, fill="white") + 
+  labs(x="Mean pairwise distance",y="Pr(shortlist)") + 
+  scale_x_continuous(breaks=seq(-0.45,0,.1),limits=c(-0.45,0)) + 
+  scale_y_continuous(breaks=seq(0,.3,.1),limits=c(0,.3)) + 
+  theme_bw()
+```
+
+# MODEL TIME!
+
+## Fully unconditional
+
+the model
+
+```{r modelNull}
+fit.div.insp.null = glmer(shortlist ~ (1|authorURL) + (1|challenge), data=data, family=binomial)
+summary(fit.div.insp.null)
+confint.merMod(fit.div.insp.null,method='Wald')
+```
+
+### test sig. of variance components
+
+challenge
+```{r testREchall}
+fit.div.insp.auth = glmer(shortlist ~ (1|authorURL), data=data, family=binomial)
+anova(fit.div.insp.auth,fit.div.insp.null,test='LRT')
+```
+
+author
+```{r testREAuthor}
+fit.div.insp.chall = glmer(shortlist ~ (1|challenge), data=data, family=binomial)
+anova(fit.div.insp.chall,fit.div.insp.null,test='LRT')
+```
+
+## Controls
+
+```{r modelControls}
+fit.div.insp.controls = glmer(shortlist ~ (1|authorURL) + (1|challenge) + num_shortlisted_sources + comments_preshortlist, data=data, family=binomial)
+summary(fit.div.insp.controls)
+confint.merMod(fit.div.insp.controls,method='Wald')
+anova(fit.div.insp.null,fit.div.insp.controls,test='LRT') # yes, chisq(2) = 61.14, p < .001
+```
+
+## Mean Diversity
+```{r modelDiversity}
+data$insp_div_mean_rescaled <- data$insp_div_mean*10 #rescale for easier interpretation of coefficient
+fit.div.insp.divmean = glmer(shortlist ~ (1|authorURL) + (1|challenge) + num_shortlisted_sources + comments_preshortlist + insp_div_mean_rescaled, data=data, family=binomial)
+summary(fit.div.insp.divmean)
+confint.merMod(fit.div.insp.divmean,method='Wald')
+anova(fit.div.insp.controls,fit.div.insp.divmean,test='LRT') # add anything over control?
+```
+
+any problem variation?
+```{r modelDiversityRE}
+fit.div.insp.divmean.RE = glmer(shortlist ~ (1|authorURL) + (insp_div_mean_rescaled|challenge) + insp_div_mean_rescaled + num_shortlisted_sources + comments_preshortlist, data=data.div.insp, family=binomial)
+summary(fit.div.insp.divmean.RE)
+confint.merMod(fit.div.insp.divmean.RE,method='Wald')
+anova(fit.div.insp.divmean,fit.div.insp.divmean.RE,test='LRT') 
+```
+
+# outlier influence
+influence.div.insp.divmean = influence.ME(fit.div.insp.divmean,obs=TRUE) #drop individual cases, not higher-level units
+dfbetas.divmean = dfbetas.estex(influence.div.insp.divmean,parameters='insp_div_mean')
+boxplot(dfbetas.divmean,ylab="DFBETAS for mean diversity")
+
+### REPEAT DISTANCE ###
+# base
+fit.div.insp.distmean = glmer(shortlist ~ (1|authorURL) + (1|challenge) + insp_dist_z_insp_mean + num_shortlisted_sources + comments_preshortlist, data=data.div.insp, family=binomial)
+summary(fit.div.insp.distmean) # effect is in the same direction, of similar size, but with more noise (now "marginal")
+confint.merMod(fit.div.insp.distmean,method='Wald') # 95% CI = [-0.91,0.07]
+
+# add (control for?) diversity
+fit.div.insp.distmean.divmean = glmer(shortlist ~ (1|authorURL) + (1|challenge) + insp_dist_z_insp_mean + insp_div_mean_rescaled + num_shortlisted_sources + comments_preshortlist, data=data.div.insp, family=binomial)
+summary(fit.div.insp.distmean.divmean)
+confint.merMod(fit.div.insp.distmean.divmean,method='Wald')
+
+# not much point, but see if there's an interaction between distance and diversity? (bivariate linear r = ~.3)
+data.div.insp$insp_distmeanXdivmean = data.div.insp$insp_dist_z_insp_mean * data.div.insp$insp_div_mean # create interaction term
+fit.div.insp.distmean.divmean.inter = glmer(shortlist ~ (1|authorURL) + (1|challenge) + insp_dist_z_insp_mean + insp_div_mean_rescaled + insp_distmeanXdivmean + num_shortlisted_sources + comments_preshortlist, data=data.div.insp, family=binomial)
+summary(fit.div.insp.distmean.divmean.inter)
+confint.merMod(fit.div.insp.distmean.divmean.inter,method='Wald')
+
+anova(fit.div.insp.controls,fit.div.insp.distmean,fit.div.insp.distmean.divmean, fit.div.insp.distmean.divmean.inter,test='LRT')
