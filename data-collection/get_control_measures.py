@@ -81,9 +81,10 @@ def format_date_string(unformatted):
 parentdirpath = "/Users/joelc/Dropbox/Research/dissertation/"
 if argv[1] == "jchan":
     parentdirpath = "/Users/jchan/Desktop/Dropbox/Research/Dissertation/"
-doclevelfilename = "%sOpenIDEO/Pipeline/Challenge_and_High-level_Data/iPython intermediate inputs and outputs/DocLevel_AfterDistance.xlsx" %parentdirpath
-pathlevelfilename = "%sOpenIDEO/Pipeline/Challenge_and_High-level_Data/iPython intermediate inputs and outputs/PathLevel_AfterDistance.xlsx" %parentdirpath
-conceptlevelfilename = "%sOpenIDEO/Pipeline/Challenge_and_High-level_Data/iPython intermediate inputs and outputs/ConceptLevel_AfterDistance.xlsx" %parentdirpath
+LEVEL = argv[2]
+doclevelfilename = "%sOpenIDEO/Pipeline/Challenge_and_High-level_Data/iPython intermediate inputs and outputs/DocLevel_AfterDistance_Level%s.xlsx" %(parentdirpath, LEVEL)
+pathlevelfilename = "%sOpenIDEO/Pipeline/Challenge_and_High-level_Data/iPython intermediate inputs and outputs/PathLevel_AfterDistance_Level%s.xlsx" %(parentdirpath, LEVEL)
+conceptlevelfilename = "%sOpenIDEO/Pipeline/Challenge_and_High-level_Data/iPython intermediate inputs and outputs/ConceptLevel_AfterDistance_Level%s.xlsx" %(parentdirpath, LEVEL)
 rawcommentsfilename = "%sOpenIDEO/Pipeline/Challenge_and_High-level_Data/AllCommentsData_2013-12-25.csv" %parentdirpath
 challengemetadatafilename = "%sOpenIDEO/Pipeline/Challenge_and_High-level_Data/iPython intermediate inputs and outputs/ChallengeMetadata.csv" %parentdirpath
 
@@ -165,6 +166,6 @@ conceptlevel_df = pd.merge(conceptlevel_df,concept_comments,how='left',left_on='
 conceptlevel_df.comments_preshortlist[pd.isnull(conceptlevel_df['comments_preshortlist'])] = 0
 
 # finished! output for analysis
-outfilename = "%sOpenIDEO/Pipeline/Challenge_and_High-level_Data/iPython intermediate inputs and outputs/ConceptLevel_AfterDistanceAndControls.xlsx" %parentdirpath
+outfilename = "%sOpenIDEO/Pipeline/Challenge_and_High-level_Data/iPython intermediate inputs and outputs/ConceptLevel_AfterDistanceAndControls_Level%s.xlsx" %(parentdirpath, LEVEL)
 conceptlevel_df.to_excel(outfilename,sheet_name='data')
 print "Finished!"
