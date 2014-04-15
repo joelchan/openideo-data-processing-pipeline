@@ -115,11 +115,11 @@ def get_comment_text(comments):
     return comments_by_author
 
 # Parameters
-comments_file = "/Users/jchan/Desktop/Dropbox/Research/Dissertation/OpenIDEO/Pipeline/Challenge_and_High-level_Data/AllCommentsData_2013-12-25.csv"
-author_metadata_file = "/Users/jchan/Desktop/Dropbox/Research/Dissertation/OpenIDEO/Pipeline/Challenge_and_High-level_Data/AuthorData_EmilyThesisSample_2013-12-30.csv"
-post_metadata_file = "/Users/jchan/Desktop/Dropbox/Research/Dissertation/OpenIDEO/Pipeline/Challenge_and_High-level_Data/AllMetaData_CSV_2013-12-30.csv"
-outdir = "/Users/jchan/Desktop/Dropbox/Research/Dissertation/OpenIDEO/Pipeline/CommentsByAuthor/"
-postdir = "/Users/jchan/Desktop/Dropbox/Research/Dissertation/OpenIDEO/Pipeline/RawTextDescriptions/"
+comments_file = "/Users/joelc/Dropbox/Research/Dissertation/OpenIDEO/Pipeline/Challenge_and_High-level_Data/AllCommentsData_2013-12-25.csv"
+author_metadata_file = "/Users/joelc/Dropbox/Research/Dissertation/OpenIDEO/Pipeline/Challenge_and_High-level_Data/AuthorData_EmilyThesisSample_2013-12-30.csv"
+post_metadata_file = "/Users/joelc/Dropbox/Research/Dissertation/OpenIDEO/Pipeline/Challenge_and_High-level_Data/AllMetaData_CSV_2013-12-30.csv"
+outdir = "/Users/joelc/Dropbox/Research/Dissertation/OpenIDEO/Pipeline/PostsByAuthor/"
+postdir = "/Users/joelc/Dropbox/Research/Dissertation/OpenIDEO/Pipeline/RawTextDescriptions/"
 weirdwords = ['http','nbsp']
 
 # Read in the data files
@@ -145,7 +145,7 @@ for author in author_metadata['author ID']:
     commenttext = ""
     if author in comments_by_author:
         commenttext = comments_by_author[author]
-    author_texts[author] = posttext + commenttext
+    author_texts[author] = posttext #+ commenttext
     author_counter += 1
     stdout.write("\t%d of %d authors processed...\r" %(author_counter, len(author_metadata)))
     stdout.flush()
